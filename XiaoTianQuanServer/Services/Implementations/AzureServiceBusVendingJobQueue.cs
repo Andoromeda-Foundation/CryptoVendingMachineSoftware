@@ -21,7 +21,6 @@ namespace XiaoTianQuanServer.Services.Implementations
         private readonly IServiceProvider _serviceProvider;
         private readonly IKvCacheManager _cacheManager;
         private readonly IQueueClient _paymentExpiryQueue;
-        private readonly IQueueClient _vendingMachineUnlockQueue;
         private readonly IQueueClient _productUnreleasedRefundQueue;
         private readonly ServiceBus _settings;
 
@@ -38,38 +37,8 @@ namespace XiaoTianQuanServer.Services.Implementations
             _serviceProvider = serviceProvider;
             _cacheManager = cacheManager;
             _settings = options.Value;
-            _vendingMachineUnlockQueue = new QueueClient(_settings.ConnectionString, _settings.VendingMachineUnlockQueueName);
             _productUnreleasedRefundQueue = new QueueClient(_settings.ConnectionString, _settings.ProductUnreleasedRefundQueueName);
             _paymentExpiryQueue = new QueueClient(_settings.ConnectionString, _settings.PaymentExpiryQueueName);
-        }
-
-        public async Task EnqueueVendingMachineUnlockMessageAsync(Guid machineId, int delay)
-        {
-            var message = new Message
-            {
-                Body = Encoding.UTF8.GetBytes(machineId.ToString())
-            };
-
-            var seqNo = await _vendingMachineUnlockQueue.ScheduleMessageAsync(message, DateTime.UtcNow.AddSeconds(delay));
-            _logger.LogTrace($"Enqueued vending machine unlock message for machine {machineId}, seq no. {seqNo}");
-            await _cacheManager.SetAsync(_settings.VendingMachineUnlockQueueName, machineId.ToString(), seqNo);
-        }
-
-        public async Task<bool> RemoveVendingMachineUnlockMessageAsync(Guid machineId)
-        {
-            var seqNo = await _cacheManager.GetDeleteLongAsync(_settings.VendingMachineUnlockQueueName, machineId.ToString());
-            try
-            {
-                await _vendingMachineUnlockQueue.CancelScheduledMessageAsync(seqNo);
-                _logger.LogTrace($"Cancelled vending machine unlock message for machine {machineId}, seq no. {seqNo}");
-                return true;
-            }
-            catch (MessageNotFoundException)
-            {
-                _logger.LogError(
-                    $"Failed to remove machine unlock message for machine {machineId}, retrieved seq no. {seqNo} not found");
-                return false;
-            }
         }
 
         public async Task EnqueuePaymentExpiryMessageAsync(Guid transactionId, int delay)
@@ -118,7 +87,6 @@ namespace XiaoTianQuanServer.Services.Implementations
                 MaxConcurrentCalls = 1
             };
 
-            _vendingMachineUnlockQueue.RegisterMessageHandler(HandleVendingMachineUnlockQueueMessage, options);
             _paymentExpiryQueue.RegisterMessageHandler(HandlePaymentExpiryQueueMessage, options);
             _productUnreleasedRefundQueue.RegisterMessageHandler(HandleProductUnreleasedRefundQueueMessage, options);
 
@@ -135,44 +103,6 @@ namespace XiaoTianQuanServer.Services.Implementations
             // It seems that you don't need to do anything
             // TODO: it can actually revoke the invoice to avoid miss payment
             return Task.CompletedTask;
-        }
-
-        private async Task HandleVendingMachineUnlockQueueMessage(Message message, CancellationToken dummy)
-        {
-            bool ok = Guid.TryParse(Encoding.UTF8.GetString(message.Body), out var machineId);
-            if (!ok)
-            {
-                _logger.LogError(
-                    $"VendingMachineUnlockQueue received trash data: {BitConverter.ToString(message.Body.Take(32).ToArray())}");
-                await _vendingMachineUnlockQueue.DeadLetterAsync(message.SystemProperties.LockToken);
-                return;
-            }
-
-            (IServiceScope scope, ApplicationDbContext context) = GetDbContext();
-            using IServiceScope serviceScope = scope;
-
-            var machine = await context.VendingMachines.SingleAsync(vm => vm.MachineId == machineId);
-
-            if (machine.ExclusiveUseLock == Guid.Empty)
-            {
-                _logger.LogError(
-                    $"VendingMachineUnlockQueue failed to unlock: machine {machineId} is already unlocked");
-                await _vendingMachineUnlockQueue.CompleteAsync(message.SystemProperties.LockToken);
-                return;
-            }
-
-            machine.ExclusiveUseLock = Guid.Empty;
-            context.Entry(machine).State = EntityState.Modified;
-
-            try
-            {
-                await context.SaveChangesAsync();
-                await _vendingMachineUnlockQueue.CompleteAsync(message.SystemProperties.LockToken);
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                await _vendingMachineUnlockQueue.AbandonAsync(message.SystemProperties.LockToken);
-            }
         }
 
         private Task ExceptionHandler(ExceptionReceivedEventArgs arg)

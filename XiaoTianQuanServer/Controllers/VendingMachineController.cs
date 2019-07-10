@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using XiaoTianQuanProtocols.DataObjects;
 using XiaoTianQuanProtocols.VendingMachineRequests;
@@ -19,63 +20,26 @@ namespace XiaoTianQuanServer.Controllers
     [ApiController]
     public class VendingMachineController : ControllerBase
     {
+        private readonly ILogger<VendingMachineController> _logger;
         private readonly ApplicationDbContext _context;
         private readonly ICurrencyExchangeService _currencyExchangeService;
         private readonly IMachineConfigurationService _machineConfiguration;
         private readonly IVendingJobQueue _vendingJobQueue;
         private readonly IVendingMachineDataService _vmService;
 
-        public VendingMachineController(ApplicationDbContext context,
+        public VendingMachineController(ILogger<VendingMachineController> logger,
+            ApplicationDbContext context,
             ICurrencyExchangeService currencyExchangeService,
             IMachineConfigurationService machineConfiguration,
             IVendingJobQueue vendingJobQueue,
             IVendingMachineDataService vmService)
         {
+            _logger = logger;
             _context = context;
             _currencyExchangeService = currencyExchangeService;
             _machineConfiguration = machineConfiguration;
             _vendingJobQueue = vendingJobQueue;
             _vmService = vmService;
-        }
-
-        [HttpPost]
-        [Route("lock")]
-        [Authorize(Policy = Policies.VendingMachine)]
-        public async Task<ActionResult<Guid>> LockVendingMachine()
-        {
-            var machineId = this.GetMachineId();
-
-            // Enqueue auto unlock
-            var tl = await _machineConfiguration.GetMachineLockTimeoutAsync(machineId);
-            await _vendingJobQueue.EnqueueVendingMachineUnlockMessageAsync(machineId, tl);
-
-            // Is locked and lock the machine
-            var lockToken = await _vmService.TryLockVendingMachineAsync(machineId);
-            if (lockToken == Guid.Empty)
-            {
-                // Lock the machine fails, remove the unlock from queue
-                await _vendingJobQueue.RemoveVendingMachineUnlockMessageAsync(machineId);
-                return Conflict();
-            }
-
-            return lockToken;
-        }
-
-        [HttpDelete]
-        [Route("lock")]
-        [Authorize(Policy = Policies.VendingMachine)]
-        public async Task<IActionResult> UnlockVendingMachine()
-        {
-            var machineId = this.GetMachineId();
-
-            // Is locked and lock the machine
-            var unlocked = await _vmService.UnlockVendingMachineAsync(machineId);
-            if (unlocked && await _vendingJobQueue.RemoveVendingMachineUnlockMessageAsync(machineId))
-            {
-                return Ok();
-            }
-            else
-                return StatusCode(503);
         }
 
         [HttpGet]

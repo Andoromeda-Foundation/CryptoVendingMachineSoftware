@@ -5,8 +5,10 @@ using System.Text;
 using System.Threading.Tasks;
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Ioc;
+using GalaSoft.MvvmLight.Views;
 using Microsoft.Extensions.DependencyInjection;
 using VendingMachineKiosk.ViewModels;
+using VendingMachineKiosk.Views;
 
 namespace VendingMachineKiosk.Helpers
 {
@@ -32,6 +34,13 @@ namespace VendingMachineKiosk.Helpers
                     services.AddTransient<ProductSelectionViewModel>();
                     services.AddTransient<ProductPaymentViewModel>();
                     services.AddTransient<PaymentInstructionViewModel>();
+
+                    var navigationService = new NavigationService();
+                    navigationService.Configure("MainPage", typeof(MainPage));
+                    navigationService.Configure("ProductSelection", typeof(ProductSelection));
+                    navigationService.Configure("ProductPayment", typeof(ProductPayment));
+                    navigationService.Configure("PaymentInstruction", typeof(PaymentInstruction));
+                    services.AddSingleton<INavigationService>(navigationService);
                 });
             }
         }

@@ -7,6 +7,8 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:controls="using:VendingMachineKiosk.Controls"
     xmlns:vm="using:VendingMachineKiosk.ViewModels"
+    xmlns:interactivity="using:Microsoft.Xaml.Interactivity"
+    xmlns:core="using:Microsoft.Xaml.Interactions.Core"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     DataContext="{Binding Source={StaticResource ViewModelLocator}, Path=ProductSelectionViewModel}">
@@ -21,9 +23,15 @@
             <ProgressRing 
             Visibility="{Binding ViewModelLoadingStatus, Converter={StaticResource IsViewModelLoadingStatusMatchToVisibilityConverter}, ConverterParameter={StaticResource ViewModelLoadingStatusLoading}}" 
             IsActive="{Binding ViewModelLoadingStatus, Converter={StaticResource IsViewModelLoadingStatusMatchToBooleanConverter}, ConverterParameter={StaticResource ViewModelLoadingStatusLoading}}"/>
-            <controls:ItemEnabledGridView x:Name="GridViewProducts" ItemsSource="{Binding Products}" CanDragItems="False" SelectionMode="Single" SelectionChanged="GridViewProducts_SelectionChanged"
-                                      ItemEnabledPath="Quantity" ItemEnabledConverter="{StaticResource QuantityToBooleanConverter}"
+            <controls:ItemEnabledGridView x:Name="GridViewProducts" ItemsSource="{Binding Products}" CanDragItems="False" 
+                                          SelectionMode="Single" SelectedItem="{Binding VendingStateViewModelService.SelectedProduct, Mode=TwoWay}"
+                                        ItemEnabledPath="Quantity" ItemEnabledConverter="{StaticResource QuantityToBooleanConverter}"
                                       Visibility="{Binding ViewModelLoadingStatus, Converter={StaticResource IsViewModelLoadingStatusMatchToVisibilityConverter}, ConverterParameter={StaticResource ViewModelLoadingStatusLoaded}}">
+                <interactivity:Interaction.Behaviors>
+                    <core:EventTriggerBehavior EventName="SelectionChanged">
+                        <core:InvokeCommandAction Command="{Binding CommandSelectedProduct}" />
+                    </core:EventTriggerBehavior>
+                </interactivity:Interaction.Behaviors>
                 <controls:ItemEnabledGridView.ItemTemplate>
                     <DataTemplate>
                         <Frame Width="400" >
@@ -66,7 +74,7 @@
             <StackPanel Visibility="{Binding ViewModelLoadingStatus, Converter={StaticResource IsViewModelLoadingStatusMatchToVisibilityConverter}, ConverterParameter={StaticResource ViewModelLoadingStatusError}}" HorizontalAlignment="Center" VerticalAlignment="Center">
                 <TextBlock Text="Error" Style="{ThemeResource SubtitleTextBlockStyle}" />
                 <TextBlock Text="{Binding ErrorMessage}" Style="{ThemeResource CaptionTextBlockStyle}"/>
-                <Button Content="Retry" Margin="10" HorizontalAlignment="Center"/>
+                <Button Content="Retry" Margin="10" HorizontalAlignment="Center" Command="{x:Bind CommandRetry}"/>
             </StackPanel>
         </Grid>
     </Grid>

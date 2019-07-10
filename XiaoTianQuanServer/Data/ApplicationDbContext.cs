@@ -18,7 +18,7 @@ namespace XiaoTianQuanServer.Data
         {
             builder.Entity<VendingMachine>().HasIndex(v => v.MachineId).IsUnique(true);
 
-            builder.Entity<Inventory>().HasIndex(i => new {i.VendingMachineId, i.Slot}).IsUnique(true);
+            builder.Entity<Inventory>().HasIndex(i => new { i.VendingMachineId, i.Slot }).IsUnique(true);
 
             base.OnModelCreating(builder);
         }
@@ -26,5 +26,6 @@ namespace XiaoTianQuanServer.Data
         public DbSet<VendingMachine> VendingMachines { get; set; }
         public DbSet<Inventory> Inventories { get; set; }
         public DbSet<Transaction> Transactions { get; set; }
+        public DbSet<LightningNetworkTransaction> LightningNetworkTransactions { get; set; }
     }
 }

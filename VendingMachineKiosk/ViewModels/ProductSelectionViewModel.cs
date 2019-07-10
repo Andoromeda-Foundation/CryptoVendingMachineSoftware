@@ -4,8 +4,11 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using Windows.Foundation.Diagnostics;
 using GalaSoft.MvvmLight;
+using GalaSoft.MvvmLight.Command;
+using GalaSoft.MvvmLight.Views;
 using VendingMachineKiosk.Exceptions;
 using VendingMachineKiosk.Services;
 using XiaoTianQuanProtocols.DataObjects;
@@ -14,8 +17,10 @@ namespace VendingMachineKiosk.ViewModels
 {
     public class ProductSelectionViewModel : AsyncLoadingViewModelBase
     {
+        public VendingStateViewModelService VendingStateViewModelService { get; }
         private readonly ServerRequester _requester;
         private readonly LoggingChannel _logging;
+        private readonly INavigationService _navigationService;
         private ObservableCollection<ProductInformation> _products = new ObservableCollection<ProductInformation>();
 
         public ObservableCollection<ProductInformation> Products
@@ -28,14 +33,26 @@ namespace VendingMachineKiosk.ViewModels
             }
         }
 
-        public ProductSelectionViewModel(ServerRequester requester, LoggingChannel logging)
+        public ProductSelectionViewModel(ServerRequester requester, LoggingChannel logging,
+            VendingStateViewModelService vendingStateViewModelService, INavigationService navigationService)
         {
+            VendingStateViewModelService = vendingStateViewModelService;
             _requester = requester;
             _logging = logging;
+            _navigationService = navigationService;
+        }
+
+        public ICommand CommandSelectedProduct => new RelayCommand(SelectProduct);
+
+        private void SelectProduct()
+        {
+            _navigationService.NavigateTo("ProductPayment");
         }
 
         public override async Task LoadAsync()
         {
+            VendingStateViewModelService.ResetVendingState();
+
             ViewModelLoadingStatus = ViewModelLoadingStatus.Loading;
             try
             {

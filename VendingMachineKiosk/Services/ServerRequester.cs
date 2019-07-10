@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Diagnostics;
 using Windows.Security.Cryptography.Certificates;
+using Windows.Storage.Streams;
 using Windows.Web.Http;
 using Windows.Web.Http.Filters;
 using Newtonsoft.Json;
@@ -52,6 +53,11 @@ namespace VendingMachineKiosk.Services
             //_client.DefaultRequestHeaders.Accept.Add(new Windows.Web.Http.Headers.HttpMediaTypeWithQualityHeaderValue("application/json"));
         }
 
+        private Uri GetUri(string endpoint)
+        {
+            return new Uri(_endpoint, endpoint);
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -61,7 +67,7 @@ namespace VendingMachineKiosk.Services
         /// <exception cref="ServerInvalidResponseException">When server responsed invalid data</exception>
         public async Task<IList<ProductInformation>> GetProductList()
         {
-            var productResponse = await ExceptionWrapperAsync<ListProductsResponse, object>(_ =>
+            var productResponse = await RequestWrapperAsync<ListProductsResponse, object>(_ =>
                 _client.GetAsync(new Uri(_endpoint, Endpoints.GetProductList)));
 
             return productResponse.Products;
@@ -69,41 +75,31 @@ namespace VendingMachineKiosk.Services
 
         public async Task<CreateTransactionResponse> CreateTransaction(CreateTransactionRequest createTransactionRequest)
         {
-            var transactionResponse = await ExceptionWrapperAsync<CreateTransactionResponse, CreateTransactionRequest>(
+            var transactionResponse = await RequestWrapperAsync<CreateTransactionResponse, CreateTransactionRequest>(
                 req =>
                 {
                     string jsonStr = JsonConvert.SerializeObject(req);
-                    return _client.PostAsync(new Uri(_endpoint, Endpoints.CreateTransaction),
-                        new HttpStringContent(jsonStr, Windows.Storage.Streams.UnicodeEncoding.Utf8, "application/json"));
+                    return _client.PostAsync(GetUri(Endpoints.CreateTransaction),
+                        new HttpStringContent(jsonStr, UnicodeEncoding.Utf8, "application/json"));
                 }, createTransactionRequest);
             return transactionResponse;
         }
 
-        public async Task UnlockVendingMachine()
+        public async Task<GetPaymentInstructionResponse> GetPaymentInstruction(GetPaymentInstructionRequest request)
         {
-            await ExceptionWrapperAsync<object, object>(
-                _ => _client.DeleteAsync(new Uri(_endpoint, Endpoints.LockVendingMachine)),
-                null, _ => Task.FromResult(new object()));
-        }
-
-        public async Task<Guid> LockVendingMachine()
-        {
-            var lockToken = await ExceptionWrapperAsync<Guid, object>(
-                _ => _client.PostAsync(new Uri(_endpoint, Endpoints.LockVendingMachine), null), null, async msg =>
+            var pir = await RequestWrapperAsync<GetPaymentInstructionResponse, GetPaymentInstructionRequest>(
+                req =>
                 {
-                    var str = await msg.Content.ReadAsStringAsync();
-                    var ok = Guid.TryParse(str, out var token);
-                    if (!ok)
-                    {
-                        throw new ServerInvalidResponseException($"Invalid lock token {str}");
-                    }
-                    return token;
-                });
+                    string jsonStr = JsonConvert.SerializeObject(req);
+                    return _client.PostAsync(GetUri(Endpoints.GetPaymentInstruction),
+                        new HttpStringContent(jsonStr, UnicodeEncoding.Utf8, "application/json"));
+                }, request);
 
-            return lockToken;
+            return pir;
         }
 
-        private async Task<TResponse> ExceptionWrapperAsync<TResponse, TRequest>(
+
+        private async Task<TResponse> RequestWrapperAsync<TResponse, TRequest>(
             Func<TRequest, IAsyncOperationWithProgress<HttpResponseMessage, HttpProgress>> action,
             TRequest request = null, Func<HttpResponseMessage, Task<TResponse>> responseParser = null)
             where TRequest : class

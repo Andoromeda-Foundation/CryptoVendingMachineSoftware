@@ -14,6 +14,7 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 using GalaSoft.MvvmLight.Command;
+using GalaSoft.MvvmLight.Messaging;
 using VendingMachineKiosk.ViewModels;
 using XiaoTianQuanProtocols;
 using XiaoTianQuanProtocols.DataObjects;
@@ -32,18 +33,10 @@ namespace VendingMachineKiosk.Views
             this.InitializeComponent();
         }
 
-        protected override async void OnNavigatedTo(NavigationEventArgs e)
+        protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
-
-            if (e.Parameter == null)
-                throw new ArgumentNullException(nameof(e.Parameter));
-
-            (ProductInformation product, PaymentType payment) = (ValueTuple<ProductInformation, PaymentType>) e.Parameter;
-            var viewmodel = (PaymentInstructionViewModel) DataContext;
-            viewmodel.PaymentType = payment;
-            viewmodel.Slot = product.Slot;
-            await viewmodel.LoadAsync();
+            Messenger.Default.Send(Messages.LoadPaymentInstructionViewModel);
         }
     }
 }

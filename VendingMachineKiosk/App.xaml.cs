@@ -16,6 +16,7 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
+using GalaSoft.MvvmLight.Views;
 using Microsoft.Extensions.DependencyInjection;
 using VendingMachineKiosk.Services;
 using VendingMachineKiosk.Views;
@@ -43,7 +44,7 @@ namespace VendingMachineKiosk
         {
             services.AddSingleton(sp => new LoggingChannel("VendingMachineKiosk", null));
             services.AddSingleton<ServerRequester>();
-            services.AddSingleton<VendingLifecycleManager>();
+            services.AddSingleton<VendingStateViewModelService>();
         }
 
         /// <summary>
@@ -53,11 +54,9 @@ namespace VendingMachineKiosk
         /// <param name="e">Details about the launch request and process.</param>
         protected override void OnLaunched(LaunchActivatedEventArgs e)
         {
-            Frame rootFrame = Window.Current.Content as Frame;
-
             // Do not repeat app initialization when the Window already has content,
             // just ensure that the window is active
-            if (rootFrame == null)
+            if (!(Window.Current.Content is Frame rootFrame))
             {
                 // Create a Frame to act as the navigation context and navigate to the first page
                 rootFrame = new Frame();

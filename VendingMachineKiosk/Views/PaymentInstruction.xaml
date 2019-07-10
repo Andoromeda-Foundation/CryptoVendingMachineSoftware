@@ -5,6 +5,7 @@
     xmlns:local="using:VendingMachineKiosk.Views"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:media="using:Microsoft.Toolkit.Uwp.UI.Media"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     DataContext="{Binding PaymentInstructionViewModel, Source={StaticResource ViewModelLocator}}">
@@ -21,22 +22,22 @@
         </StackPanel>
         <Grid Visibility="{Binding ViewModelLoadingStatus, Converter={StaticResource IsViewModelLoadingStatusMatchToVisibilityConverter}, ConverterParameter={StaticResource ViewModelLoadingStatusLoaded}}">
             <Grid.RowDefinitions>
-                <RowDefinition Height="*" />
+                <RowDefinition Height="*" x:Name="RowQrCode" />
                 <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
-            <!---->
-            <Image x:Name="IPaymentQrCode" Stretch="Uniform" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                   Source="{Binding PaymentQrCode}" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}"/>
 
-            <Rectangle Fill="{ThemeResource SystemControlAcrylicElementBrush}" Visibility="{Binding PaymentQrCodeNotValid, Converter={StaticResource BoolToVisibilityConverter}}"
-                       Height="{Binding ActualHeight, ElementName=IPaymentQrCode}" Width="{Binding ActualHeight, ElementName=IPaymentQrCode}" />
-                
-            <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center">
-                <TextBlock Text="Transaction ID: " />
-                <TextBlock Text="{Binding TransactionId}" />
-                <TextBlock Text=", valid in" Margin="5,0,5,5"/>
-                <TextBlock Text="{Binding IdleTimerRemaining}" />
-            </StackPanel>
+            <Image x:Name="IPaymentQrCode" Stretch="Uniform" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                   Source="{Binding PaymentQrCode}" Width="{Binding Height, ElementName=RowQrCode}" />
+
+            <Border Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
+                    Visibility="{Binding PaymentQrCodeNotValid, Converter={StaticResource BoolToVisibilityConverter}}"
+                    Height="{Binding Height, ElementName=IPaymentQrCode}"
+                    Width="{Binding Width, ElementName=IPaymentQrCode}">
+                <Border.Background>
+                    <media:BackdropBlurBrush Amount="8.0" />
+                </Border.Background>
+            </Border>
+
         </Grid>
     </Grid>
 </Page>

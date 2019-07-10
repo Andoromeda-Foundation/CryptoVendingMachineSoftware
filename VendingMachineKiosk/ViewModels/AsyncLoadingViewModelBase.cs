@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using Windows.ApplicationModel.Core;
+using Windows.UI.Core;
 using GalaSoft.MvvmLight;
 
 namespace VendingMachineKiosk.ViewModels
@@ -42,5 +45,20 @@ namespace VendingMachineKiosk.ViewModels
         }
 
         public abstract Task LoadAsync();
+
+        public virtual Task UnloadAsync()
+        {
+            return Task.CompletedTask;
+        }
+
+        protected void RunInUiThread(DispatchedHandler action, CoreDispatcherPriority priority = CoreDispatcherPriority.High)
+        {
+            Task.Run(async () => await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(priority, action));
+        }
+
+        public virtual void RaisePropertyChangedMarshaled([CallerMemberName] string propertyName = null)
+        {
+            RunInUiThread(() => RaisePropertyChanged(propertyName));
+        }
     }
 }

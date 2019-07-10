@@ -15,13 +15,19 @@ namespace XiaoTianQuanServer.DataModels
         public Guid Id { get; set; }
 
         [Required]
-        public VendingMachine VendingMachine { get; set; }
+        public Inventory Inventory { get; set; }
+
+        public int BasePrice { get; set; }
+
+        public bool Settled { get; set; }
 
         public DateTime TransactionCreated { get; set; }
 
-        public PaymentType PaymentType { get; set; }
+        public DateTime TransactionExpiry { get; set; }
 
         [Timestamp]
         public byte[] RowVersion { get; set; }
+
+        public bool Active { get; set; }
     }
 }

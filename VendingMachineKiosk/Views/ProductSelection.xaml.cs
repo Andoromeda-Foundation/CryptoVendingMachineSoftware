@@ -39,6 +39,8 @@ namespace VendingMachineKiosk.Views
 
         public ICommand CommandGoBack => new RelayCommand(() => { this.NavigateWithoutHistory<MainPage>(); });
 
+        public ICommand CommandRetry => new RelayCommand(async () => await ((ViewModels.ProductSelectionViewModel)DataContext).LoadAsync());
+
         public ProductSelection()
         {
             this.InitializeComponent();
@@ -62,8 +64,7 @@ namespace VendingMachineKiosk.Views
             base.OnNavigatedTo(e);
 
             // Load and display, then start timer
-            var vm = (ViewModels.ProductSelectionViewModel)DataContext;
-            await vm.LoadAsync();
+            await ((ViewModels.ProductSelectionViewModel) DataContext).LoadAsync();
 
             _timer.Start();
             IdleCounter = 0;
@@ -93,9 +94,5 @@ namespace VendingMachineKiosk.Views
             });
         }
 
-        private void GridViewProducts_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            Frame.Navigate<ProductPayment>(GridViewProducts.SelectedItem);
-        }
     }
 }

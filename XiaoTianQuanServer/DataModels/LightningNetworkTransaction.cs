@@ -6,14 +6,16 @@ using System.Threading.Tasks;
 
 namespace XiaoTianQuanServer.DataModels
 {
-    public class VendingMachine
+    public class LightningNetworkTransaction
     {
         public int Id { get; set; }
-        public Guid MachineId { get; set; }
 
-        public List<Inventory> Inventories { get; set; }
+        [Required]
+        public Transaction Transaction { get; set; }
 
-        [Timestamp]
-        public byte[] RowVersion { get; set; }
+        public double Amount { get; set; }
+
+        [Required]
+        public string PaymentRequest { get; set; }
     }
 }

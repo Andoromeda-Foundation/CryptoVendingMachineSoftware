@@ -121,6 +121,10 @@ namespace XiaoTianQuanServer
             // TransactionManager
             services.AddTransient<ITransactionManager, Services.Implementations.TransactionManager>();
 
+            // PaymentInstructionCacheManager
+            services
+                .AddTransient<IPaymentInstructionCacheManager, Services.Implementations.PaymentInstructionCacheManager>();
+
             // VendingJobQueue
             services.AddSingleton<Services.Implementations.AzureServiceBusVendingJobQueue>();
             services.AddSingleton<IVendingJobQueue>(sp =>

@@ -15,7 +15,6 @@ namespace XiaoTianQuanProtocols.VendingMachineRequests
         Ok = 0,
 
         // Vending Machine related
-        InvalidLockToken = 1000,
         VendingMachineNotFound = 1001,
 
         // Inventory related
@@ -24,6 +23,8 @@ namespace XiaoTianQuanProtocols.VendingMachineRequests
         // Internal errors
         // 50xx: local server
         // 51xx: lnd
+        TransactionGenerationFailed = 5000,
+        TransactionNotFound = 5001,
         LndGenerateInvoiceFailed = 5100,
     }
 }

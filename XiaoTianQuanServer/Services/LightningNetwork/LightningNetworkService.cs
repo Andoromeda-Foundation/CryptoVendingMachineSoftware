@@ -52,7 +52,7 @@ namespace XiaoTianQuanServer.Services.LightningNetwork
         /// <param name="value"></param>
         /// <param name="expiry">Expiry in seconds</param>
         /// <returns></returns>
-        public async Task<AddInvoiceResponse> AddInvoiceAsync(string memo, int value, int expiry)
+        public async Task<string> AddInvoiceAsync(string memo, int value, int expiry)
         {
             var invoiceRequest = new AddInvoiceRequest
             {
@@ -73,7 +73,7 @@ namespace XiaoTianQuanServer.Services.LightningNetwork
             try
             {
                 var inv = JsonConvert.DeserializeObject<AddInvoiceResponse>(response, _jsonSerializerSettings);
-                return inv;
+                return inv.PaymentRequest;
             }
             catch (JsonReaderException)
             {

@@ -1,38 +1,79 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using System.Timers;
 using System.Windows.Input;
-using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
 using GalaSoft.MvvmLight.Messaging;
+using VendingMachineKiosk.Exceptions;
+using VendingMachineKiosk.Services;
 using XiaoTianQuanProtocols;
 using XiaoTianQuanProtocols.DataObjects;
 using XiaoTianQuanProtocols.VendingMachineRequests;
 
 namespace VendingMachineKiosk.ViewModels
 {
-    public class ProductPaymentViewModel : ViewModelBase
+    public class ProductPaymentViewModel : AsyncLoadingViewModelBase
     {
+        public VendingStateViewModelService VendingStateViewModelService { get; }
         public static readonly Guid MessageChannelId = Guid.NewGuid();
 
-        public Guid LockToken { get; set; }
+        private readonly Timer _displayTimer = new Timer(100);
+        private readonly ServerRequester _requester;
 
-        private ProductInformation _productInformation;
+        private int _displayTimeRemaining;
+        private bool _isDisplayTimerVisible;
+        private PaymentType _paymentType;
+        private DateTime _transactionExpiry;
 
-        // This should be set
-        public ProductInformation ProductInformation
+        public ProductPaymentViewModel(ServerRequester requester, VendingStateViewModelService vendingStateViewModelService)
         {
-            get => _productInformation;
-            set
+            VendingStateViewModelService = vendingStateViewModelService;
+            _requester = requester;
+            _displayTimer.Elapsed += DisplayTimer_Elapsed;
+
+            MessengerInstance.Register<Messages>(this, ProcessMessage);
+
+            if (IsInDesignModeStatic)
+                VendingStateViewModelService.SelectedProduct = new ProductInformation
+                {
+                    Name = "Weed",
+                    Description = "Super strong super nice",
+                    Image = new Uri(
+                        "https://xiaotianquandev.blob.core.windows.net/images/cfe0b1b0-abbe-4ffb-9e7b-e54667a4b5d0.jpg"),
+                    Quantity = 6,
+                    Prices = new Dictionary<PaymentType, double>
+                    {
+                        {PaymentType.LightningNetwork, 6000}
+                    },
+                    Slot = "1"
+                };
+        }
+
+        private async void ProcessMessage(Messages msg)
+        {
+            switch (msg)
             {
-                _productInformation = value;
-                RaisePropertyChanged();
+                case Messages.InvalidatePaymentSession:
+                    PaymentSelectionEnabled = false;
+                    break;
+                case Messages.LoadProductPaymentViewModel:
+                    await LoadAsync();
+                    break;
+                case Messages.LoadPaymentInstructionPage:
+                    break;
+                case Messages.LoadPaymentInstructionViewModel:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(msg), msg, null);
             }
         }
 
-        private PaymentType _paymentType;
+        public Guid TransactionId => VendingStateViewModelService.TransactionId;
+        
+        // This should be set
+        public ProductInformation ProductInformation => VendingStateViewModelService.SelectedProduct;
 
         public PaymentType PaymentType
         {
@@ -44,36 +85,117 @@ namespace VendingMachineKiosk.ViewModels
             }
         }
 
-        public ProductPaymentViewModel()
+        public bool IsDisplayTimerVisible
         {
-            if (IsInDesignModeStatic)
+            get => _isDisplayTimerVisible;
+            set
             {
-                ProductInformation = new ProductInformation
-                {
-                    Name = "Weed",
-                    Description = "Super strong super nice",
-                    Image = new Uri(
-                        "https://xiaotianquandev.blob.core.windows.net/images/cfe0b1b0-abbe-4ffb-9e7b-e54667a4b5d0.jpg"),
-                    Quantity = 6,
-                    Prices = new Dictionary<PaymentType, double>
-                    {
-                        { XiaoTianQuanProtocols.PaymentType.LightningNetwork, 6000 }
-                    },
-                    Slot = "1"
-                };
+                _isDisplayTimerVisible = value;
+                RaisePropertyChangedMarshaled();
             }
         }
 
-        public ICommand CommandSelectPaymentType => new RelayCommand(CreateTransaction);
+        public ICommand CommandSelectPaymentType => new RelayCommand(SelectPaymentType);
 
-        private void CreateTransaction()
+        public DateTime TransactionExpiry
+        {
+            get => _transactionExpiry;
+            set
+            {
+                _transactionExpiry = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        public int DisplayTimeRemaining
+        {
+            get => _displayTimeRemaining;
+            set
+            {
+                _displayTimeRemaining = value;
+                RaisePropertyChangedMarshaled();
+            }
+        }
+
+        private bool _paymentSelectionEnabled = true;
+
+        public bool PaymentSelectionEnabled
+        {
+            get => _paymentSelectionEnabled;
+            set
+            {
+                _paymentSelectionEnabled = value;
+                RaisePropertyChanged();
+            }
+        }
+
+
+        public override async Task LoadAsync()
+        {
+            ViewModelLoadingStatus = ViewModelLoadingStatus.Loading;
+
+            try
+            {
+                ViewModelLoadingStatus = ViewModelLoadingStatus.Loaded;
+
+                await CreateTransaction();
+
+                if (ProductInformation.Prices.Count > 0)
+                {
+                    PaymentType = ProductInformation.Prices.First().Key;
+                    SelectPaymentType();
+                }
+            }
+            catch (VendingMachineKioskException e)
+            {
+                ViewModelLoadingStatus = ViewModelLoadingStatus.Error;
+                ErrorMessage = e.Message;
+            }
+        }
+
+        private async Task CreateTransaction()
+        {
+            if (ProductInformation == null) throw new InvalidOperationException("ProductInformation is null");
+
+            CreateTransactionResponse result = await _requester.CreateTransaction(new CreateTransactionRequest
+            {
+                Slot = ProductInformation.Slot
+            });
+            TransactionExpiry = result.PaymentDisplayTimeout.ToLocalTime();
+            DisplayTimeRemaining = (int)(result.PaymentDisplayTimeout - DateTime.UtcNow).TotalSeconds;
+            StartDisplayTimer();
+            VendingStateViewModelService.TransactionId = result.TransactionId;
+        }
+
+        private void DisplayTimer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            var timeRemaining = (int)Math.Floor((TransactionExpiry - DateTime.Now).TotalSeconds);
+            DisplayTimeRemaining = timeRemaining;
+            if (timeRemaining <= 0)
+            {
+                StopDisplayTimer();
+                RunInUiThread(() => MessengerInstance.Send(Messages.InvalidatePaymentSession));
+            }
+        }
+
+        private void SelectPaymentType()
         {
             if (ProductInformation == null)
-            {
                 throw new InvalidOperationException("ProductInformation is null");
-            }
 
-            Messenger.Default.Send<(ProductInformation, PaymentType)>((ProductInformation, PaymentType), MessageChannelId);
+            Messenger.Default.Send(Messages.LoadPaymentInstructionPage);
+        }
+
+        private void StartDisplayTimer()
+        {
+            IsDisplayTimerVisible = true;
+            _displayTimer.Start();
+        }
+
+        private void StopDisplayTimer()
+        {
+            _displayTimer.Stop();
+            IsDisplayTimerVisible = false;
         }
     }
 }

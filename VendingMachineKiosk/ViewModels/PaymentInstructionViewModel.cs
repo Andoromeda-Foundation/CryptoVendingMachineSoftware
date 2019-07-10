@@ -1,14 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using System.Threading.Tasks;
-using System.Timers;
 using System.Windows.Input;
-using Windows.Graphics.Imaging;
-using Windows.Storage;
 using Windows.Storage.Streams;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
@@ -18,45 +11,26 @@ using VendingMachineKiosk.Exceptions;
 using VendingMachineKiosk.Extensions;
 using VendingMachineKiosk.Services;
 using XiaoTianQuanProtocols;
-using XiaoTianQuanProtocols.DataObjects;
 using XiaoTianQuanProtocols.VendingMachineRequests;
 
 namespace VendingMachineKiosk.ViewModels
 {
     public class PaymentInstructionViewModel : AsyncLoadingViewModelBase
     {
+        public VendingStateViewModelService VendingStateViewModelService { get; }
         private readonly ServerRequester _requester;
+        private ImageSource _paymentQrCode;
 
-        public PaymentType PaymentType { get; set; }
-        public string Slot { get; set; }
-        private ImageSource _paymentQrCode = new WriteableBitmap(500, 500);
-        private readonly Timer _paymentTimer = new Timer(1000);
+        private bool _paymentQrCodeNotValid;
 
-        private int _idleTimerCount;
-
-        private int IdleTimerCount
+        public PaymentInstructionViewModel(ServerRequester requester, VendingStateViewModelService vendingStateViewModelService)
         {
-            get => _idleTimerCount;
-            set
-            {
-                _idleTimerCount = value;
-                RaisePropertyChanged(nameof(IdleTimerRemaining));
-            }
+            VendingStateViewModelService = vendingStateViewModelService;
+            _requester = requester;
+            MessengerInstance.Register<Messages>(this, ProcessMessages);
         }
 
-        private int _displayTimeout = -1;
-
-        public int IdleTimerRemaining
-        {
-            get
-            {
-                if (_displayTimeout == -1)
-                    return 0;
-
-                return _displayTimeout - _idleTimerCount;
-            }
-        }
-
+        public PaymentType PaymentType => VendingStateViewModelService.PaymentType;
 
         public ImageSource PaymentQrCode
         {
@@ -68,8 +42,6 @@ namespace VendingMachineKiosk.ViewModels
             }
         }
 
-        private bool _paymentQrCodeNotValid = true;
-
         public bool PaymentQrCodeNotValid
         {
             get => _paymentQrCodeNotValid;
@@ -80,59 +52,9 @@ namespace VendingMachineKiosk.ViewModels
             }
         }
 
-
-        private Guid _transactionId;
-
-        public Guid TransactionId
-        {
-            get => _transactionId;
-            set
-            {
-                _transactionId = value;
-                RaisePropertyChanged();
-            }
-        }
+        public Guid TransactionId => VendingStateViewModelService.TransactionId;
 
         public ICommand CommandRetryLoad => new RelayCommand(async () => await LoadAsync());
-
-        public PaymentInstructionViewModel(ServerRequester requester)
-        {
-            _requester = requester;
-            _paymentTimer.Elapsed += PaymentTimerElapsed;
-        }
-
-        private async void PaymentTimerElapsed(object sender, ElapsedEventArgs e)
-        {
-            if (_displayTimeout == -1)
-            {
-                return;
-            }
-
-            ++_idleTimerCount;
-
-            await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
-                Windows.UI.Core.CoreDispatcherPriority.High,
-                () =>
-                {
-                    RaisePropertyChanged(nameof(IdleTimerRemaining));
-
-                    if (IdleTimerCount >= _displayTimeout)
-                    {
-                        StopPaymentTimer();
-                        PaymentQrCodeNotValid = true;
-                    }
-                });
-        }
-
-        private void StartPaymentTimer()
-        {
-            _paymentTimer.Start();
-        }
-
-        private void StopPaymentTimer()
-        {
-            _paymentTimer.Stop();
-        }
 
         public override async Task LoadAsync()
         {
@@ -142,29 +64,23 @@ namespace VendingMachineKiosk.ViewModels
             ViewModelLoadingStatus = ViewModelLoadingStatus.Loading;
             try
             {
-                var response = await _requester.CreateTransaction(new CreateTransactionRequest
-                {
-                    PaymentType = PaymentType,
-                    Slot = Slot,
-                });
-
-                _displayTimeout = response.PaymentDisplayTimeout;
-                TransactionId = response.TransactionId;
+                GetPaymentInstructionResponse response = await _requester.GetPaymentInstruction(
+                    new GetPaymentInstructionRequest
+                    {
+                        PaymentType = PaymentType,
+                        TransactionId = TransactionId
+                    });
 
                 switch (PaymentType)
                 {
                     case PaymentType.LightningNetwork:
-                        var qrCode = await GenerateQr(response.PaymentCode);
-                        await qrCode.SaveAsync($"{TransactionId}.png");
-                        PaymentQrCode = qrCode;
-                        PaymentQrCodeNotValid = false;
+                        PaymentQrCode = await GenerateQr(response.PaymentCode);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
 
                 ViewModelLoadingStatus = ViewModelLoadingStatus.Loaded;
-                StartPaymentTimer();
             }
             catch (VendingMachineKioskException e)
             {
@@ -176,7 +92,8 @@ namespace VendingMachineKiosk.ViewModels
         private async Task<WriteableBitmap> GenerateQr(string source)
         {
             var qrGenerator = new QRCodeGenerator();
-            var qrCodeData = qrGenerator.CreateQrCode(Encoding.UTF8.GetBytes(source), QRCodeGenerator.ECCLevel.H);
+            QRCodeData qrCodeData =
+                qrGenerator.CreateQrCode(Encoding.UTF8.GetBytes(source), QRCodeGenerator.ECCLevel.L);
             var qrCode = new BitmapByteQRCode(qrCodeData);
             var qrCodeImage = qrCode.GetGraphic(20);
 
@@ -187,9 +104,27 @@ namespace VendingMachineKiosk.ViewModels
                     writer.WriteBytes(qrCodeImage);
                     await writer.StoreAsync();
                 }
-                var bitmap = new WriteableBitmap(500, 500);
+
+                var bitmap = new WriteableBitmap(200, 200);
                 await bitmap.SetSourceAsync(stream);
                 return bitmap;
+            }
+        }
+
+        private async void ProcessMessages(Messages msg)
+        {
+            switch (msg)
+            {
+                case Messages.InvalidatePaymentSession:
+                    PaymentQrCodeNotValid = true;
+                    break;
+                case Messages.LoadProductPaymentViewModel:
+                    break;
+                case Messages.LoadPaymentInstructionPage:
+                    break;
+                case Messages.LoadPaymentInstructionViewModel:
+                    await LoadAsync();
+                    break;
             }
         }
     }

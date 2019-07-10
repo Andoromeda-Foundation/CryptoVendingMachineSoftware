@@ -17,91 +17,6 @@ namespace XiaoTianQuanServer.Services.Implementations
             _context = context;
         }
 
-        /// <summary>
-        /// Atomic operation, checks whether already locked
-        /// </summary>
-        /// <param name="machineId"></param>
-        /// <param name="retry"></param>
-        /// <returns></returns>
-        public async Task<Guid> TryLockVendingMachineAsync(Guid machineId, int retry)
-        {
-            do
-            {
-                var machine = await _context.VendingMachines.SingleAsync(vm => vm.MachineId == machineId);
-
-                if (machine.ExclusiveUseLock != Guid.Empty)   // Lock was acquired by others
-                    return Guid.Empty;
-
-                machine.ExclusiveUseLock = Guid.NewGuid();
-                _context.Entry(machine).State = EntityState.Modified;
-
-                try
-                {
-                    await _context.SaveChangesAsync();
-                    return machine.ExclusiveUseLock;
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    --retry;
-                }
-
-            } while (retry > 0);
-
-            return Guid.Empty; // Conflict
-        }
-
-        /// <summary>
-        /// Does not check locked
-        /// </summary>
-        /// <param name="machineId"></param>
-        /// <param name="retry"></param>
-        /// <returns>true if locked, false on retry</returns>
-        public async Task<Guid> LockVendingMachineAsync(Guid machineId, int retry)
-        {
-            do
-            {
-                var machine = await _context.VendingMachines.SingleAsync(vm => vm.MachineId == machineId);
-
-                machine.ExclusiveUseLock = Guid.NewGuid();
-                _context.Entry(machine).State = EntityState.Modified;
-
-                try
-                {
-                    await _context.SaveChangesAsync();
-                    return machine.ExclusiveUseLock;
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    --retry;
-                }
-            } while (retry > 0);
-
-            return Guid.Empty;
-        }
-
-        public async Task<bool> UnlockVendingMachineAsync(Guid machineId, int retry)
-        {
-            do
-            {
-                var machine = await _context.VendingMachines.SingleAsync(vm => vm.MachineId == machineId);
-
-                machine.ExclusiveUseLock = Guid.Empty;
-                _context.Entry(machine).State = EntityState.Modified;
-
-                try
-                {
-                    await _context.SaveChangesAsync();
-                    return true;
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    --retry;
-                }
-            } while (retry > 0);
-
-            return false;
-        }
-
         public async Task<IList<string>> GetVendingMachineSlotsAsync(Guid machineId)
         {
             var list = await _context.Inventories.Include(i => i.VendingMachine)
@@ -169,10 +84,5 @@ namespace XiaoTianQuanServer.Services.Implementations
             return false;
         }
 
-        public async Task<bool> CheckVendingMachineLockTokenAsync(Guid machineId, Guid lockToken)
-        {
-            var machine = await _context.VendingMachines.SingleAsync(v => v.MachineId == machineId);
-            return machine.ExclusiveUseLock == lockToken;
-        }
     }
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using System.Windows.Input;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
@@ -18,6 +19,7 @@ using GalaSoft.MvvmLight.Messaging;
 using VendingMachineKiosk.ViewModels;
 using XiaoTianQuanProtocols.DataObjects;
 using VendingMachineKiosk.Extensions;
+using VendingMachineKiosk.Services;
 using XiaoTianQuanProtocols;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
@@ -32,8 +34,23 @@ namespace VendingMachineKiosk.Views
         public ProductPayment()
         {
             this.InitializeComponent();
-            Messenger.Default.Register<(ProductInformation, PaymentType)>(this, ProductPaymentViewModel.MessageChannelId,
-                DisplayPaymentInstruction);
+            Messenger.Default.Register<Messages>(this, ProcessMessage);
+        }
+
+        private void ProcessMessage(Messages msg)
+        {
+            switch (msg)
+            {
+                case Messages.InvalidatePaymentSession:
+                    break;
+                case Messages.LoadProductPaymentViewModel:
+                    break;
+                case Messages.LoadPaymentInstructionPage:
+                    FramePaymentInstruction.Navigate<PaymentInstruction>();
+                    break;
+                case Messages.LoadPaymentInstructionViewModel:
+                    break;
+            }
         }
 
         private ProductPaymentViewModel ViewModel => (ProductPaymentViewModel)DataContext;
@@ -41,15 +58,7 @@ namespace VendingMachineKiosk.Views
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
-
-            var product = (ProductInformation)e.Parameter;
-            ViewModel.ProductInformation = product;
-        }
-
-        private async void DisplayPaymentInstruction((ProductInformation product, PaymentType paymentType) param)
-        {
-            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.High,
-                () => FramePaymentInstruction.Navigate<PaymentInstruction>(param));
+            Messenger.Default.Send(Messages.LoadProductPaymentViewModel);
         }
 
         public ICommand CommandGoBack => new RelayCommand(() =>
@@ -60,6 +69,8 @@ namespace VendingMachineKiosk.Views
             }
         });
 
-        public ICommand CommandGoHome => new RelayCommand(() => { this.Navigate<MainPage>(); });
+        public ICommand CommandGoHome => new RelayCommand(() => this.Navigate<MainPage>());
+
+        public ICommand CommandRetryLoad => new RelayCommand(async () => await ViewModel.LoadAsync());
     }
 }
