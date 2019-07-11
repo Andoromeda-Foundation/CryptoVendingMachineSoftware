@@ -10,6 +10,7 @@ using VendingMachineKiosk.Exceptions;
 using VendingMachineKiosk.Services;
 using XiaoTianQuanProtocols;
 using XiaoTianQuanProtocols.DataObjects;
+using XiaoTianQuanProtocols.Extensions;
 using XiaoTianQuanProtocols.VendingMachineRequests;
 
 namespace VendingMachineKiosk.ViewModels
@@ -17,7 +18,6 @@ namespace VendingMachineKiosk.ViewModels
     public class ProductPaymentViewModel : AsyncLoadingViewModelBase
     {
         public VendingStateViewModelService VendingStateViewModelService { get; }
-        public static readonly Guid MessageChannelId = Guid.NewGuid();
 
         private readonly Timer _displayTimer = new Timer(100);
         private readonly ServerRequester _requester;
@@ -32,8 +32,6 @@ namespace VendingMachineKiosk.ViewModels
             VendingStateViewModelService = vendingStateViewModelService;
             _requester = requester;
             _displayTimer.Elapsed += DisplayTimer_Elapsed;
-
-            MessengerInstance.Register<Messages>(this, ProcessMessage);
 
             if (IsInDesignModeStatic)
                 VendingStateViewModelService.SelectedProduct = new ProductInformation
@@ -51,12 +49,12 @@ namespace VendingMachineKiosk.ViewModels
                 };
         }
 
-        private async void ProcessMessage(Messages msg)
+        protected override async Task ProcessMessageAsync(Messages msg)
         {
             switch (msg)
             {
                 case Messages.InvalidatePaymentSession:
-                    PaymentSelectionEnabled = false;
+                    IsPayable = false;
                     break;
                 case Messages.LoadProductPaymentViewModel:
                     await LoadAsync();
@@ -65,13 +63,16 @@ namespace VendingMachineKiosk.ViewModels
                     break;
                 case Messages.LoadPaymentInstructionViewModel:
                     break;
+                case Messages.CeaseProductPaymentViewModel:
+                    IsCeased = true;
+                    break;
+                case Messages.CeasePaymentInstructionViewModel:
+                    break;
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(msg), msg, null);
+                    break;
             }
         }
 
-        public Guid TransactionId => VendingStateViewModelService.TransactionId;
-        
         // This should be set
         public ProductInformation ProductInformation => VendingStateViewModelService.SelectedProduct;
 
@@ -117,14 +118,14 @@ namespace VendingMachineKiosk.ViewModels
             }
         }
 
-        private bool _paymentSelectionEnabled = true;
+        private bool _isPayable = true;
 
-        public bool PaymentSelectionEnabled
+        public bool IsPayable
         {
-            get => _paymentSelectionEnabled;
+            get => _isPayable;
             set
             {
-                _paymentSelectionEnabled = value;
+                _isPayable = value;
                 RaisePropertyChanged();
             }
         }
@@ -149,7 +150,7 @@ namespace VendingMachineKiosk.ViewModels
             catch (VendingMachineKioskException e)
             {
                 ViewModelLoadingStatus = ViewModelLoadingStatus.Error;
-                ErrorMessage = e.Message;
+                ErrorMessage = e.GetInnerMessages();
             }
         }
 
@@ -169,6 +170,12 @@ namespace VendingMachineKiosk.ViewModels
 
         private void DisplayTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
+            if (IsCeased)
+            {
+                StopDisplayTimer();
+                return;
+            }
+
             var timeRemaining = (int)Math.Floor((TransactionExpiry - DateTime.Now).TotalSeconds);
             DisplayTimeRemaining = timeRemaining;
             if (timeRemaining <= 0)

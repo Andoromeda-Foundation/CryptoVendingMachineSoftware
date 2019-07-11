@@ -120,9 +120,9 @@ namespace XiaoTianQuanServer.Controllers
             switch (request.PaymentType)
             {
                 case PaymentType.LightningNetwork:
-                    var satoshi = _exchangeService.ConvertToSatoshi(basePrice);
-                    var memo = $"{transaction.Id}, sell product in {slot} for {satoshi} on {DateTime.UtcNow}";
-                    var result = await _paymentInstructionCacheManager.RetrieveOrCreateLightningNetwork(transaction.Id, memo, satoshi);
+                    var satoshiIfNotCreated = _exchangeService.ConvertToSatoshi(basePrice);
+                    var memo = $"{transaction.Id}, sell product in {slot} for {satoshiIfNotCreated} on {DateTime.UtcNow}";
+                    var result = await _paymentInstructionCacheManager.RetrieveOrCreateLightningNetwork(transaction.Id, memo, satoshiIfNotCreated);
 
                     if (result == null)
                     {
@@ -133,6 +133,7 @@ namespace XiaoTianQuanServer.Controllers
                     }
 
                     response.PaymentCode = result.PaymentRequest;
+                    response.Amount = result.Amount;
                     return Ok(response);
                 default:
                     throw new ArgumentOutOfRangeException();

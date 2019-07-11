@@ -12,6 +12,7 @@ using GalaSoft.MvvmLight.Views;
 using VendingMachineKiosk.Exceptions;
 using VendingMachineKiosk.Services;
 using XiaoTianQuanProtocols.DataObjects;
+using XiaoTianQuanProtocols.Extensions;
 
 namespace VendingMachineKiosk.ViewModels
 {
@@ -62,9 +63,36 @@ namespace VendingMachineKiosk.ViewModels
             }
             catch (VendingMachineKioskException e)
             {
-                _logging.LogMessage($"Product selection viewmodel err: {e.Message}", LoggingLevel.Error);
-                ErrorMessage = e.Message;
+                _logging.LogMessage($"Product selection viewmodel err: {e.GetInnerMessages()}", LoggingLevel.Error);
+                ErrorMessage = e.GetInnerMessages();
                 ViewModelLoadingStatus = ViewModelLoadingStatus.Error;
+            }
+        }
+
+        protected override async Task ProcessMessageAsync(Messages msg)
+        {
+            switch (msg)
+            {
+                case Messages.InvalidatePaymentSession:
+                    break;
+                case Messages.LoadProductPaymentViewModel:
+                    break;
+                case Messages.CeaseProductPaymentViewModel:
+                    break;
+                case Messages.LoadPaymentInstructionPage:
+                    break;
+                case Messages.LoadPaymentInstructionViewModel:
+                    break;
+                case Messages.CeasePaymentInstructionViewModel:
+                    break;
+                case Messages.LoadProductSelectionViewModel:
+                    await LoadAsync();
+                    break;
+                case Messages.CeaseProductSelectionViewModel:
+                    IsCeased = true;
+                    break;
+                default:
+                    break;
             }
         }
     }

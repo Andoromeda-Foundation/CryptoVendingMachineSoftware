@@ -15,5 +15,7 @@ namespace XiaoTianQuanProtocols.VendingMachineRequests
     {
         [Required]
         public string PaymentCode { get; set; }
+
+        public double Amount { get; set; }
     }
 }

@@ -50,6 +50,12 @@ namespace VendingMachineKiosk.Views
                     break;
                 case Messages.LoadPaymentInstructionViewModel:
                     break;
+                case Messages.CeaseProductPaymentViewModel:
+                    break;
+                case Messages.CeasePaymentInstructionViewModel:
+                    break;
+                default:
+                    break;
             }
         }
 
@@ -59,6 +65,12 @@ namespace VendingMachineKiosk.Views
         {
             base.OnNavigatedTo(e);
             Messenger.Default.Send(Messages.LoadProductPaymentViewModel);
+        }
+
+        protected override void OnNavigatedFrom(NavigationEventArgs e)
+        {
+            base.OnNavigatedFrom(e);
+            Messenger.Default.Send(Messages.CeaseProductPaymentViewModel);
         }
 
         public ICommand CommandGoBack => new RelayCommand(() =>

@@ -18,7 +18,7 @@ namespace VendingMachineKiosk.ViewModels
         Error,
     }
 
-    public abstract class AsyncLoadingViewModelBase : ViewModelBase
+    public abstract class AsyncLoadingViewModelBase : MessagingViewModelBase
     {
         private ViewModelLoadingStatus _viewModelViewModelLoadingStatus = ViewModelLoadingStatus.NotLoaded;
 

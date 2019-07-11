@@ -11,23 +11,25 @@ using VendingMachineKiosk.Exceptions;
 using VendingMachineKiosk.Extensions;
 using VendingMachineKiosk.Services;
 using XiaoTianQuanProtocols;
+using XiaoTianQuanProtocols.Extensions;
 using XiaoTianQuanProtocols.VendingMachineRequests;
 
 namespace VendingMachineKiosk.ViewModels
 {
     public class PaymentInstructionViewModel : AsyncLoadingViewModelBase
     {
+        private Guid Id { get; } = Guid.NewGuid();
         public VendingStateViewModelService VendingStateViewModelService { get; }
         private readonly ServerRequester _requester;
         private ImageSource _paymentQrCode;
 
         private bool _paymentQrCodeNotValid;
+        private double _paymentAmount;
 
         public PaymentInstructionViewModel(ServerRequester requester, VendingStateViewModelService vendingStateViewModelService)
         {
             VendingStateViewModelService = vendingStateViewModelService;
             _requester = requester;
-            MessengerInstance.Register<Messages>(this, ProcessMessages);
         }
 
         public PaymentType PaymentType => VendingStateViewModelService.PaymentType;
@@ -70,7 +72,7 @@ namespace VendingMachineKiosk.ViewModels
                         PaymentType = PaymentType,
                         TransactionId = TransactionId
                     });
-
+                PaymentAmount = response.Amount;
                 switch (PaymentType)
                 {
                     case PaymentType.LightningNetwork:
@@ -85,7 +87,17 @@ namespace VendingMachineKiosk.ViewModels
             catch (VendingMachineKioskException e)
             {
                 ViewModelLoadingStatus = ViewModelLoadingStatus.Error;
-                ErrorMessage = e.Message;
+                ErrorMessage = e.GetInnerMessages();
+            }
+        }
+
+        public double PaymentAmount
+        {
+            get => _paymentAmount;
+            set
+            {
+                _paymentAmount = value;
+                RaisePropertyChanged();
             }
         }
 
@@ -111,7 +123,7 @@ namespace VendingMachineKiosk.ViewModels
             }
         }
 
-        private async void ProcessMessages(Messages msg)
+        protected override async Task ProcessMessageAsync(Messages msg)
         {
             switch (msg)
             {
@@ -125,7 +137,19 @@ namespace VendingMachineKiosk.ViewModels
                 case Messages.LoadPaymentInstructionViewModel:
                     await LoadAsync();
                     break;
+                case Messages.CeaseProductPaymentViewModel:
+                    break;
+                case Messages.CeasePaymentInstructionViewModel:
+                    IsCeased = true;
+                    break;
+                case Messages.LoadProductSelectionViewModel:
+                    break;
+                case Messages.CeaseProductSelectionViewModel:
+                    break;
+                default:
+                    break;
             }
         }
+
     }
 }

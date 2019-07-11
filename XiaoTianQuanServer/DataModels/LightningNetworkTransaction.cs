@@ -12,6 +12,7 @@ namespace XiaoTianQuanServer.DataModels
 
         [Required]
         public Transaction Transaction { get; set; }
+        public Guid TransactionId { get; set; }
 
         public double Amount { get; set; }
 

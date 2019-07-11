@@ -7,6 +7,7 @@ using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Ioc;
 using GalaSoft.MvvmLight.Views;
 using Microsoft.Extensions.DependencyInjection;
+using VendingMachineKiosk.Services;
 using VendingMachineKiosk.ViewModels;
 using VendingMachineKiosk.Views;
 

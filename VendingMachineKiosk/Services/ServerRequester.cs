@@ -125,7 +125,7 @@ namespace VendingMachineKiosk.Services
             }
             catch (Exception e)
             {
-                throw new ServerRequestException(e.Message, e);
+                throw new ServerRequestException("Server request error", e);
             }
 
         }
@@ -144,7 +144,7 @@ namespace VendingMachineKiosk.Services
                         return responseObject;
                     else
                         throw new ServerNonSuccessResponseException(
-                            $"Server returned OK but status is {resp.Status.ToString()}");
+                            $"Server responsed with {resp.Status.ToString()}");
                 }
                 else
                 {
@@ -154,7 +154,7 @@ namespace VendingMachineKiosk.Services
             }
             catch (JsonReaderException e)
             {
-                throw new ServerInvalidResponseException(e.Message, e);
+                throw new ServerInvalidResponseException("Server returned invalid json", e);
             }
         }
     }

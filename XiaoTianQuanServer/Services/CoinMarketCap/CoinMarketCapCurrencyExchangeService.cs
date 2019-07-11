@@ -11,6 +11,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using XiaoTianQuanProtocols;
+using XiaoTianQuanProtocols.Extensions;
 
 namespace XiaoTianQuanServer.Services.CoinMarketCap
 {
@@ -45,7 +46,14 @@ namespace XiaoTianQuanServer.Services.CoinMarketCap
 
         private async void ExecuteRequestTask(object state)
         {
-            await RequestExchangeRatesAsync();
+            try
+            {
+                await RequestExchangeRatesAsync();
+            }
+            catch (OperationCanceledException e)
+            {
+                _logger.LogError(e.GetInnerMessages());
+            }
         }
 
         private async Task RequestExchangeRatesAsync()
@@ -102,11 +110,11 @@ namespace XiaoTianQuanServer.Services.CoinMarketCap
             }
             catch (HttpRequestException e)
             {
-                _logger.LogError(e.Message);
+                _logger.LogError(e.GetInnerMessages());
             }
             catch (JsonReaderException e)
             {
-                _logger.LogError(e.Message);
+                _logger.LogError(e.GetInnerMessages());
             }
         }
 

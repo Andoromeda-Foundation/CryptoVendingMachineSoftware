@@ -10,8 +10,10 @@ using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Navigation;
 using GalaSoft.MvvmLight.Command;
+using GalaSoft.MvvmLight.Messaging;
 using VendingMachineKiosk.Annotations;
 using VendingMachineKiosk.Extensions;
+using VendingMachineKiosk.ViewModels;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -59,12 +61,12 @@ namespace VendingMachineKiosk.Views
             }
         }
 
-        protected override async void OnNavigatedTo(NavigationEventArgs e)
+        protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
 
             // Load and display, then start timer
-            await ((ViewModels.ProductSelectionViewModel) DataContext).LoadAsync();
+            Messenger.Default.Send(Messages.LoadProductSelectionViewModel);
 
             _timer.Start();
             IdleCounter = 0;
@@ -73,6 +75,7 @@ namespace VendingMachineKiosk.Views
         protected override void OnNavigatedFrom(NavigationEventArgs e)
         {
             base.OnNavigatedFrom(e);
+            Messenger.Default.Send(Messages.CeaseProductSelectionViewModel);
             _timer.Stop();
         }
 

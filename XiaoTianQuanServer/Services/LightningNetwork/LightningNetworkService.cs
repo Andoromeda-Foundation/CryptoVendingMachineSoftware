@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -13,6 +14,7 @@ namespace XiaoTianQuanServer.Services.LightningNetwork
 {
     public class LightningNetworkService
     {
+        private readonly ILogger<LightningNetworkService> _logger;
         private readonly HttpClient _httpClient;
 
         private readonly JsonSerializerSettings _jsonSerializerSettings = new JsonSerializerSettings
@@ -24,8 +26,9 @@ namespace XiaoTianQuanServer.Services.LightningNetwork
             }
         };
 
-        public LightningNetworkService(IOptions<LndSettings> settings)
+        public LightningNetworkService(IOptions<LndSettings> settings, ILogger<LightningNetworkService> logger)
         {
+            _logger = logger;
             var handler = new HttpClientHandler();
 
             var lndSettings = settings.Value;
@@ -66,7 +69,10 @@ namespace XiaoTianQuanServer.Services.LightningNetwork
                     _jsonSerializerSettings)));
 
             if (!result.IsSuccessStatusCode)
+            {
+                _logger.LogError($"lnd request failed, status {result.StatusCode}");
                 return null;
+            }
 
             var response = await result.Content.ReadAsStringAsync();
 
@@ -77,6 +83,7 @@ namespace XiaoTianQuanServer.Services.LightningNetwork
             }
             catch (JsonReaderException)
             {
+                _logger.LogError("lnd response invalid");
                 return null;
             }
         }

@@ -8,7 +8,8 @@
     xmlns:media="using:Microsoft.Toolkit.Uwp.UI.Media"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
-    DataContext="{Binding PaymentInstructionViewModel, Source={StaticResource ViewModelLocator}}">
+    DataContext="{Binding PaymentInstructionViewModel, Source={StaticResource ViewModelLocator}}"
+    NavigationCacheMode="Disabled">
 
     <Grid>
         <ProgressRing 
@@ -22,14 +23,20 @@
         </StackPanel>
         <Grid Visibility="{Binding ViewModelLoadingStatus, Converter={StaticResource IsViewModelLoadingStatusMatchToVisibilityConverter}, ConverterParameter={StaticResource ViewModelLoadingStatusLoaded}}">
             <Grid.RowDefinitions>
+                <RowDefinition Height="auto" />
                 <RowDefinition Height="*" x:Name="RowQrCode" />
                 <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
 
-            <Image x:Name="IPaymentQrCode" Stretch="Uniform" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="5">
+                <TextBlock Text="Amount:" Style="{StaticResource TitleTextBlockStyle}" />
+                <TextBlock Text="{Binding PaymentAmount, Converter={StaticResource StringFormatConverter}, ConverterParameter='{}{0:N2}'}" Style="{StaticResource TitleTextBlockStyle}" />
+            </StackPanel>
+
+            <Image Grid.Row="1" x:Name="IPaymentQrCode" Stretch="Uniform" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                    Source="{Binding PaymentQrCode}" Width="{Binding Height, ElementName=RowQrCode}" />
 
-            <Border Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
+            <Border Grid.Row="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
                     Visibility="{Binding PaymentQrCodeNotValid, Converter={StaticResource BoolToVisibilityConverter}}"
                     Height="{Binding Height, ElementName=IPaymentQrCode}"
                     Width="{Binding Width, ElementName=IPaymentQrCode}">

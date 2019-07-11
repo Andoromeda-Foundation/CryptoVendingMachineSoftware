@@ -11,7 +11,8 @@
     xmlns:media="using:Microsoft.Toolkit.Uwp.UI.Media"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
-    DataContext="{Binding ProductPaymentViewModel, Source={StaticResource ViewModelLocator}}">
+    DataContext="{Binding ProductPaymentViewModel, Source={StaticResource ViewModelLocator}}"
+    NavigationCacheMode="Disabled">
 
     <Grid>
         <ProgressRing 
@@ -39,7 +40,7 @@
             <Image Height="100" Width="150" Stretch="Uniform" Source="{Binding ProductInformation.Image}" />
 
             <RelativePanel Grid.Row="0" Grid.Column="1" Margin="10">
-                <TextBlock x:Name="TbProductName" Text="{Binding ProductInformation.Name}" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                <TextBlock x:Name="TbProductName" Text="{Binding ProductInformation.Name}" Style="{ThemeResource SubheaderTextBlockStyle}" />
                 <TextBlock x:Name="TbProductDescription" Text="{Binding ProductInformation.Description}" Style="{ThemeResource CaptionTextBlockStyle}" 
                        RelativePanel.Below="TbProductName" Margin="0,0,0,10" />
                 <TextBlock x:Name="TbRemaining" Text="{Binding ProductInformation.Quantity}" Style="{ThemeResource BodyTextBlockStyle}"
@@ -53,7 +54,7 @@
                     <RowDefinition Height="auto" />
                 </Grid.RowDefinitions>
 
-                <ListView x:Name="ListViewPaymentSelection" SelectedIndex="0" IsEnabled="{Binding PaymentSelectionEnabled}"
+                <ListView x:Name="ListViewPaymentSelection" SelectedIndex="0" IsEnabled="{Binding IsPayable}"
                   SelectionMode="Single" SelectedItem="{Binding PaymentType, Mode=TwoWay}"
                   Header="pay with" ItemsSource="{Binding ProductInformation.Prices.Keys}">
                     <i:Interaction.Behaviors>
@@ -85,13 +86,13 @@
             </Grid>
 
             <mscontrols:DockPanel Grid.Row="1" Grid.Column="1" Margin="5" LastChildFill="True" >
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" mscontrols:DockPanel.Dock="Bottom">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" mscontrols:DockPanel.Dock="Bottom" Visibility="{Binding ViewModelLoadingStatus, Converter={StaticResource IsViewModelLoadingStatusMatchToVisibilityConverter}, ConverterParameter={StaticResource ViewModelLoadingStatusLoaded}}">
                     <TextBlock Text="Transaction ID:" Margin="0,0,5,0" />
-                    <TextBlock Text="{Binding TransactionId}" />
+                    <TextBlock Text="{Binding VendingStateViewModelService.TransactionId}" />
                     <TextBlock Text=", pay before" Margin="0,0,5,0" />
                     <TextBlock Text="{Binding TransactionExpiry}" />
                 </StackPanel>
-                <Frame x:Name="FramePaymentInstruction" mscontrols:DockPanel.Dock="Top" />
+                <Frame x:Name="FramePaymentInstruction" mscontrols:DockPanel.Dock="Top"  IsEnabled="{Binding IsPayable}" />
             </mscontrols:DockPanel>
 
         </Grid>

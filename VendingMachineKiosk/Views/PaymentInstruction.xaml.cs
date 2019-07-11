@@ -38,5 +38,11 @@ namespace VendingMachineKiosk.Views
             base.OnNavigatedTo(e);
             Messenger.Default.Send(Messages.LoadPaymentInstructionViewModel);
         }
+
+        protected override void OnNavigatedFrom(NavigationEventArgs e)
+        {
+            base.OnNavigatedFrom(e);
+            Messenger.Default.Send(Messages.CeasePaymentInstructionViewModel);
+        }
     }
 }

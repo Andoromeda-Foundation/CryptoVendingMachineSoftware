@@ -135,10 +135,13 @@
     <Compile Include="Helpers\ViewModelLocator.cs" />
     <Compile Include="Exceptions\ServerNonSuccessResponseException.cs" />
     <Compile Include="Properties\Annotations.cs" />
+    <Compile Include="Services\ConcealableNavigationService.cs" />
+    <Compile Include="Services\IConcealableNavigationService.cs" />
     <Compile Include="Services\ServerRequester.cs" />
     <Compile Include="Services\VendingStateViewModelService.cs" />
     <Compile Include="ViewModels\AsyncLoadingViewModelBase.cs" />
     <Compile Include="ViewModels\Messages.cs" />
+    <Compile Include="ViewModels\MessagingViewModelBase.cs" />
     <Compile Include="ViewModels\PaymentInstructionViewModel.cs" />
     <Compile Include="ViewModels\ProductPaymentViewModel.cs" />
     <Compile Include="ViewModels\ProductSelectionViewModel.cs" />
