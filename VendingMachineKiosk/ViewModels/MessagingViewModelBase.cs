@@ -24,6 +24,11 @@ namespace VendingMachineKiosk.ViewModels
 
         protected abstract Task ProcessMessageAsync(Messages msg);
 
-        protected bool IsCeased { get; set; }
+        protected bool IsCeased { get; private set; }
+
+        protected void CeaseViewModel()
+        {
+            IsCeased = true;
+        }
     }
 }

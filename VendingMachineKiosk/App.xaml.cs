@@ -38,15 +38,11 @@ namespace VendingMachineKiosk
             this.InitializeComponent();
             this.Suspending += OnSuspending;
 
+            // BUG: remove this in production
+            ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
             ConfigureDi(ConfigureServices);
         }
 
-        private void ConfigureServices(IServiceCollection services)
-        {
-            services.AddSingleton(sp => new LoggingChannel("VendingMachineKiosk", null));
-            services.AddSingleton<ServerRequester>();
-            services.AddSingleton<VendingStateViewModelService>();
-        }
 
         /// <summary>
         /// Invoked when the application is launched normally by the end user.  Other entry points

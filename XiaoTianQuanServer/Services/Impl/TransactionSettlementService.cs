@@ -21,7 +21,7 @@ namespace XiaoTianQuanServer.Services.Impl
         private readonly LightningNetworkRequestService _lndRequestService;
         private readonly HashSet<string> _pendingLightningNetworkTransactions = new HashSet<string>();  // key is payment hash
 
-        private Thread _lndPaymentProcessingThread;
+        private readonly Thread _lndPaymentProcessingThread;
 
         public TransactionSettlementService(ILogger<TransactionSettlementService> logger,
             IServiceProvider serviceProvider,
@@ -64,17 +64,32 @@ namespace XiaoTianQuanServer.Services.Impl
 
         private async void ProcessPendingLightningNetworkTransactionsLoop()
         {
-            while (true)
+            while (true)    // outer while is for error handling. if no error occurs, there's only a single run
             {
-                using (var scope = _serviceProvider.CreateScope())
+                try
                 {
-                    var context = scope.ServiceProvider.GetService<ApplicationDbContext>();
-                    var tm = scope.ServiceProvider.GetService<ITransactionManager>();
+                    while (true)    // inner while is for polling
+                    {
+                        using (var scope = _serviceProvider.CreateScope())
+                        {
+                            var context = scope.ServiceProvider.GetService<ApplicationDbContext>();
+                            var tm = scope.ServiceProvider.GetService<ITransactionManager>();
 
-                    await ProcessPendingLightningNetworkTransactions(context, tm);
+                            await ProcessPendingLightningNetworkTransactions(context, tm);
+                        }
+
+                        await Task.Delay(1000);
+                    }
+                }
+                catch (Exception e)
+                {
+                    if (e is StackOverflowException || e is OutOfMemoryException)
+                        throw;
+                    _logger.LogError(e.Message);
+                    _logger.LogError(e.StackTrace);
                 }
 
-                await Task.Delay(1000);
+                await Task.Delay(5000);
             }
         }
 

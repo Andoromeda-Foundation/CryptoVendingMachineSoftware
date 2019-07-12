@@ -49,5 +49,8 @@ namespace VendingMachineKiosk.Helpers
         public ProductSelectionViewModel ProductSelectionViewModel => GetService<ProductSelectionViewModel>();
         public ProductPaymentViewModel ProductPaymentViewModel => GetService<ProductPaymentViewModel>();
         public PaymentInstructionViewModel PaymentInstructionViewModel => GetService<PaymentInstructionViewModel>();
+
+        public PreloadSingletonServiceHelper PreloadSingletonServiceHelper =>
+            GetService<PreloadSingletonServiceHelper>();
     }
 }

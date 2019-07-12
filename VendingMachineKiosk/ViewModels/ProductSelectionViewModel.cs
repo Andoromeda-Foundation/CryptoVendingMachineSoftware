@@ -77,19 +77,19 @@ namespace VendingMachineKiosk.ViewModels
                     break;
                 case Messages.LoadProductPaymentViewModel:
                     break;
-                case Messages.CeaseProductPaymentViewModel:
+                case Messages.UnloadProductPaymentViewModel:
                     break;
                 case Messages.LoadPaymentInstructionPage:
                     break;
                 case Messages.LoadPaymentInstructionViewModel:
                     break;
-                case Messages.CeasePaymentInstructionViewModel:
+                case Messages.UnloadPaymentInstructionViewModel:
                     break;
                 case Messages.LoadProductSelectionViewModel:
                     await LoadAsync();
                     break;
-                case Messages.CeaseProductSelectionViewModel:
-                    IsCeased = true;
+                case Messages.UnloadProductSelectionViewModel:
+                    CeaseViewModel();
                     break;
                 default:
                     break;

@@ -21,16 +21,20 @@ namespace VendingMachineKiosk.ViewModels
 
         private readonly Timer _displayTimer = new Timer(100);
         private readonly ServerRequester _requester;
+        private readonly IVendingMachineControlService _vendingMachineControlService;
 
         private int _displayTimeRemaining;
         private bool _isDisplayTimerVisible;
         private PaymentType _paymentType;
         private DateTime _transactionExpiry;
 
-        public ProductPaymentViewModel(ServerRequester requester, VendingStateViewModelService vendingStateViewModelService)
+        public ProductPaymentViewModel(ServerRequester requester,
+            VendingStateViewModelService vendingStateViewModelService,
+            IVendingMachineControlService vendingMachineControlService)
         {
             VendingStateViewModelService = vendingStateViewModelService;
             _requester = requester;
+            _vendingMachineControlService = vendingMachineControlService;
             _displayTimer.Elapsed += DisplayTimer_Elapsed;
 
             if (IsInDesignModeStatic)
@@ -63,10 +67,21 @@ namespace VendingMachineKiosk.ViewModels
                     break;
                 case Messages.LoadPaymentInstructionViewModel:
                     break;
-                case Messages.CeaseProductPaymentViewModel:
-                    IsCeased = true;
+                case Messages.UnloadProductPaymentViewModel:
+                    CeaseViewModel();
+                    _vendingMachineControlService.RemovePendingTransaction(VendingStateViewModelService.TransactionId);
                     break;
-                case Messages.CeasePaymentInstructionViewModel:
+                case Messages.UnloadPaymentInstructionViewModel:
+                    break;
+                case Messages.LoadProductSelectionViewModel:
+                    break;
+                case Messages.UnloadProductSelectionViewModel:
+                    break;
+                case Messages.ProductReleasing:
+                    StopDisplayTimer();
+                    IsPayable = false;
+                    break;
+                case Messages.ProductReleased:
                     break;
                 default:
                     break;
@@ -166,6 +181,7 @@ namespace VendingMachineKiosk.ViewModels
             DisplayTimeRemaining = (int)(result.PaymentDisplayTimeout - DateTime.UtcNow).TotalSeconds;
             StartDisplayTimer();
             VendingStateViewModelService.TransactionId = result.TransactionId;
+            _vendingMachineControlService.AddPendingTransaction(result.TransactionId);
         }
 
         private void DisplayTimer_Elapsed(object sender, ElapsedEventArgs e)

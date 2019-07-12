@@ -129,6 +129,8 @@ namespace XiaoTianQuanServer
             services.AddSingleton<ITransactionSettlementService, Services.Impl.TransactionSettlementService>();
             services.AddHostedService(st => st.GetService<ITransactionSettlementService>());
 
+            // RefundService
+            services.AddTransient<IRefundService, Services.Impl.DummyRefundService>();
 
             // VendingJobQueue
             services.AddSingleton<Services.Impl.AzureServiceBusVendingJobQueue>();

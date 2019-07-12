@@ -21,27 +21,18 @@ namespace XiaoTianQuanServer.Services.Impl
         private readonly ILogger<AzureServiceBusVendingJobQueue> _logger;
         private readonly IServiceProvider _serviceProvider;
         private readonly IKvCacheManager _cacheManager;
-        private readonly IVendingMachineDataService _vendingMachineDataService;
         private readonly IRefundService _refundService;
         private readonly IQueueClient _paymentExpiryQueue;
         private readonly IQueueClient _productUnfulfilledRefundQueue;
         private readonly ServiceBus _settings;
 
-        private (IServiceScope, ApplicationDbContext) GetDbContext()
-        {
-            var scope = _serviceProvider.CreateScope();
-            return (scope, scope.ServiceProvider.GetService<ApplicationDbContext>());
-        }
-
         public AzureServiceBusVendingJobQueue(ILogger<AzureServiceBusVendingJobQueue> logger,
             IServiceProvider serviceProvider, IOptions<ServiceBus> options,
-            IKvCacheManager cacheManager, IVendingMachineDataService vendingMachineDataService,
-            IRefundService refundService)
+            IKvCacheManager cacheManager, IRefundService refundService)
         {
             _logger = logger;
             _serviceProvider = serviceProvider;
             _cacheManager = cacheManager;
-            _vendingMachineDataService = vendingMachineDataService;
             _refundService = refundService;
             _settings = options.Value;
             _productUnfulfilledRefundQueue = new QueueClient(_settings.ConnectionString, _settings.ProductUnfulfilledRefundQueueName);
@@ -147,6 +138,8 @@ namespace XiaoTianQuanServer.Services.Impl
 
         private async Task HandleProductUnfulfilledRefundQueueMessage(Message message, CancellationToken _)
         {
+            using var scope = _serviceProvider.CreateScope();
+
             var jsonString = Encoding.UTF8.GetString(message.Body);
 
             bool processed = false;
@@ -154,8 +147,8 @@ namespace XiaoTianQuanServer.Services.Impl
             {
                 var msg = JsonConvert.DeserializeObject<ProductUnfulfilledRefundMessage>(jsonString);
 
-                (IServiceScope scope, ApplicationDbContext context) = GetDbContext();
-                using IServiceScope serviceScope = scope;
+                var context = scope.ServiceProvider.GetService<ApplicationDbContext>();
+                var vendingMachineDataService = scope.ServiceProvider.GetService<IVendingMachineDataService>();
 
                 var transaction = await context.Transactions.FindAsync(msg.TransactionId);
                 if (transaction == null)
@@ -172,7 +165,7 @@ namespace XiaoTianQuanServer.Services.Impl
                     return;
                 }
 
-                var invOk = await _vendingMachineDataService.IncreaseVendingMachineSlotInventoryQuantityAsync(
+                var invOk = await vendingMachineDataService.IncreaseVendingMachineSlotInventoryQuantityAsync(
                     msg.InventoryId,
                     1);
                 if (!invOk)

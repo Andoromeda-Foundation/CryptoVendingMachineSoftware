@@ -44,8 +44,11 @@ namespace VendingMachineKiosk.Services
             {
                 _transactionId = value;
                 RaisePropertyChanged();
+                RaisePropertyChanged(nameof(TransactionValid));
             }
         }
+
+        public bool TransactionValid => TransactionId != Guid.Empty;
 
         public void ResetVendingState()
         {

@@ -137,7 +137,7 @@ namespace XiaoTianQuanServer.Services.Impl
         {
             // 1. Check if transaction is valid
             var transaction = await _context.Transactions.Include(t => t.Inventory)
-                .ThenInclude(i => i.VendingMachineId)
+                .ThenInclude(i => i.VendingMachine)
                 .SingleOrDefaultAsync(t => t.Id == transactionId && t.Inventory.VendingMachine.MachineId == machineId);
 
             if (transaction == null)

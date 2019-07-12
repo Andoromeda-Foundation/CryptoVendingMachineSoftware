@@ -19,7 +19,7 @@ namespace XiaoTianQuanServer.Services.LightningNetwork
     {
         private readonly ITransactionSettlementService _transactionSettlementService;
         private readonly HttpClient _httpSubscribeClient;
-        private Thread _subscribeInvoiceThread;
+        private readonly Thread _subscribeInvoiceThread;
 
         public LightningNetworkSubscribeService(IOptions<LndSettings> settings,
             ILogger<LightningNetworkSubscribeService> logger,
@@ -37,7 +37,7 @@ namespace XiaoTianQuanServer.Services.LightningNetwork
             _httpSubscribeClient.DefaultRequestHeaders.Add("Grpc-Metadata-macaroon", macString);
             _httpSubscribeClient.Timeout = TimeSpan.FromMilliseconds(Timeout.Infinite);
 
-            _subscribeInvoiceThread = new Thread(async () => await SubscribeInvoice());
+            _subscribeInvoiceThread = new Thread(SubscribeHandler);
         }
 
         private async void SubscribeHandler()

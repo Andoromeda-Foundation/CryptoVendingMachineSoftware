@@ -137,12 +137,16 @@
     <Compile Include="Properties\Annotations.cs" />
     <Compile Include="Services\ConcealableNavigationService.cs" />
     <Compile Include="Services\IConcealableNavigationService.cs" />
+    <Compile Include="Services\IVendingMachineControlService.cs" />
     <Compile Include="Services\ServerRequester.cs" />
+    <Compile Include="Services\VendingMachineControlService.cs" />
     <Compile Include="Services\VendingStateViewModelService.cs" />
     <Compile Include="ViewModels\AsyncLoadingViewModelBase.cs" />
+    <Compile Include="ViewModels\MachineHardwareStatusViewModel.cs" />
     <Compile Include="ViewModels\Messages.cs" />
     <Compile Include="ViewModels\MessagingViewModelBase.cs" />
     <Compile Include="ViewModels\PaymentInstructionViewModel.cs" />
+    <Compile Include="Helpers\PreloadSingletonServiceHelper.cs" />
     <Compile Include="ViewModels\ProductPaymentViewModel.cs" />
     <Compile Include="ViewModels\ProductSelectionViewModel.cs" />
     <Compile Include="Views\MainPage.xaml.cs">
@@ -153,6 +157,12 @@
     </Compile>
     <Compile Include="Views\ProductPayment.xaml.cs">
       <DependentUpon>ProductPayment.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\ProductReleased.xaml.cs">
+      <DependentUpon>ProductReleased.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\ProductReleasing.xaml.cs">
+      <DependentUpon>ProductReleasing.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\ProductSelection.xaml.cs">
       <DependentUpon>ProductSelection.xaml</DependentUpon>
@@ -193,6 +203,14 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Views\ProductPayment.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\ProductReleased.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\ProductReleasing.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

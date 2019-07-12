@@ -22,7 +22,6 @@ namespace XiaoTianQuanServer.Controllers
     public class TransactionController : ControllerBase
     {
         private readonly ILogger<TransactionController> _logger;
-        private readonly LightningNetworkRequestService _lightningNetworkRequestService;
         private readonly IVendingMachineDataService _vmService;
         private readonly ICurrencyExchangeService _exchangeService;
         private readonly IMachineConfigurationService _machineConfiguration;
@@ -30,13 +29,11 @@ namespace XiaoTianQuanServer.Controllers
         private readonly ITransactionManager _transactionManager;
 
         public TransactionController(ILogger<TransactionController> logger,
-            LightningNetworkRequestService lightningNetworkRequestService,
             IVendingMachineDataService vmService, ICurrencyExchangeService exchangeService,
             IMachineConfigurationService machineConfiguration, IVendingJobQueue vendingJobQueue,
             ITransactionManager transactionManager)
         {
             _logger = logger;
-            _lightningNetworkRequestService = lightningNetworkRequestService;
             _vmService = vmService;
             _exchangeService = exchangeService;
             _machineConfiguration = machineConfiguration;

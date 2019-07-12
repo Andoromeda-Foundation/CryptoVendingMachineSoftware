@@ -75,7 +75,7 @@ namespace VendingMachineKiosk.Views
         protected override void OnNavigatedFrom(NavigationEventArgs e)
         {
             base.OnNavigatedFrom(e);
-            Messenger.Default.Send(Messages.CeaseProductSelectionViewModel);
+            Messenger.Default.Send(Messages.UnloadProductSelectionViewModel);
             _timer.Stop();
         }
 

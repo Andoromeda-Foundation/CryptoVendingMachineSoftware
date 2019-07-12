@@ -50,9 +50,19 @@ namespace VendingMachineKiosk.Views
                     break;
                 case Messages.LoadPaymentInstructionViewModel:
                     break;
-                case Messages.CeaseProductPaymentViewModel:
+                case Messages.UnloadProductPaymentViewModel:
                     break;
-                case Messages.CeasePaymentInstructionViewModel:
+                case Messages.UnloadPaymentInstructionViewModel:
+                    break;
+                case Messages.LoadProductSelectionViewModel:
+                    break;
+                case Messages.UnloadProductSelectionViewModel:
+                    break;
+                case Messages.ProductReleasing:
+                    FramePaymentInstruction.Navigate<ProductReleasing>();
+                    break;
+                case Messages.ProductReleased:
+                    FramePaymentInstruction.Navigate<ProductReleased>();
                     break;
                 default:
                     break;
@@ -70,7 +80,7 @@ namespace VendingMachineKiosk.Views
         protected override void OnNavigatedFrom(NavigationEventArgs e)
         {
             base.OnNavigatedFrom(e);
-            Messenger.Default.Send(Messages.CeaseProductPaymentViewModel);
+            Messenger.Default.Send(Messages.UnloadProductPaymentViewModel);
         }
 
         public ICommand CommandGoBack => new RelayCommand(() =>

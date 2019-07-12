@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Windows.Foundation;
@@ -13,6 +15,7 @@ using Microsoft.AspNetCore.SignalR.Client;
 using Newtonsoft.Json;
 using VendingMachineKiosk.Exceptions;
 using XiaoTianQuanProtocols.DataObjects;
+using XiaoTianQuanProtocols.HubProxies;
 using XiaoTianQuanProtocols.VendingMachineRequests;
 using HttpClient = Windows.Web.Http.HttpClient;
 using HttpResponseMessage = Windows.Web.Http.HttpResponseMessage;
@@ -58,11 +61,45 @@ namespace VendingMachineKiosk.Services
                 .WithUrl(GetUri(Endpoints.VendingMachineHub), opt =>
                     {
                         opt.ClientCertificates = new X509CertificateCollection { GetX509Certificate() };
+
+
+                        // BUG: remove this in production
+                        opt.HttpMessageHandlerFactory = handler =>
+                        {
+                            if (handler is HttpClientHandler clientHandler)
+                            {
+                                clientHandler.ServerCertificateCustomValidationCallback =
+                                    (_, __, ___, ____) => true;
+                            }
+                            return handler;
+                        };
                     })
                 .WithAutomaticReconnect()
                 .Build();
 
             SetUpHubHandlers();
+
+            Task.Run(StartAsync);
+        }
+
+        public async Task StartAsync()
+        {
+            bool ok;
+            do
+            {
+                try
+                {
+                    await _hubConnection.StartAsync();
+                    ok = true;
+                }
+                catch (Exception e)
+                {
+                    _logger.LogMessage(e.Message, LoggingLevel.Error);
+                    ok = false;
+                }
+
+                await Task.Delay(10000);    // wait for 10s then reconnect
+            } while (!ok);
         }
 
         private X509Certificate2 GetX509Certificate()
@@ -84,8 +121,11 @@ namespace VendingMachineKiosk.Services
 
         private void SetUpHubHandlers()
         {
-            //_hubConnection.On()
+            _hubConnection.On<string, Guid>(nameof(IVendingMachineProxy.ReleaseProduct),
+                (slot, trans) => ReleaseProduct?.Invoke(slot, trans));
         }
+
+        public event Action<string, Guid> ReleaseProduct;
 
         private Uri GetUri(string endpoint)
         {
@@ -162,7 +202,37 @@ namespace VendingMachineKiosk.Services
             {
                 throw new ServerRequestException("Server request error", e);
             }
+        }
 
+
+        private async Task<TResponse> RequestWrapperAsync<TResponse>(
+            Func<IAsyncOperationWithProgress<HttpResponseMessage, HttpProgress>> action,
+            Func<HttpResponseMessage, Task<TResponse>> responseParser = null)
+        {
+            if (responseParser == null)
+            {
+                responseParser = ParseJsonResponse<TResponse>;
+            }
+
+            try
+            {
+                using (var result = await action())
+                {
+                    if (result.IsSuccessStatusCode)
+                    {
+                        return await responseParser(result);
+                    }
+                    else
+                    {
+                        throw new ServerNonSuccessResponseException(
+                            $"Server returned {result.StatusCode}: {result.ReasonPhrase}");
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                throw new ServerRequestException("Server request error", e);
+            }
         }
 
         private async Task<TResponse> ParseJsonResponse<TResponse>(HttpResponseMessage result)
@@ -191,6 +261,16 @@ namespace VendingMachineKiosk.Services
             {
                 throw new ServerInvalidResponseException("Server returned invalid json", e);
             }
+        }
+
+        public async Task<bool> TransactionCompleteAsync(Guid transactionId)
+        {
+            var request = new TransactionCompleteRequest { TransactionId = transactionId };
+            var response = await RequestWrapperAsync<TransactionCompleteResponse>(() => _client.PostAsync(GetUri(Endpoints.TransactionComplete),
+                new HttpStringContent(JsonConvert.SerializeObject(request),
+                    UnicodeEncoding.Utf8,
+                    "application/json")));
+            return response.Status == ResponseStatus.Ok;
         }
     }
 }

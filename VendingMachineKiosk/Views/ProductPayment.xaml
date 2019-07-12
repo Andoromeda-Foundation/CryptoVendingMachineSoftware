@@ -86,7 +86,8 @@
             </Grid>
 
             <mscontrols:DockPanel Grid.Row="1" Grid.Column="1" Margin="5" LastChildFill="True" >
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" mscontrols:DockPanel.Dock="Bottom" Visibility="{Binding ViewModelLoadingStatus, Converter={StaticResource IsViewModelLoadingStatusMatchToVisibilityConverter}, ConverterParameter={StaticResource ViewModelLoadingStatusLoaded}}">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" mscontrols:DockPanel.Dock="Bottom" 
+                            Visibility="{Binding VendingStateViewModelService.TransactionValid, Converter={StaticResource BoolToVisibilityConverter}}">
                     <TextBlock Text="Transaction ID:" Margin="0,0,5,0" />
                     <TextBlock Text="{Binding VendingStateViewModelService.TransactionId}" />
                     <TextBlock Text=", pay before" Margin="0,0,5,0" />

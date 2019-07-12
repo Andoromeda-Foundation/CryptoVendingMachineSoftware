@@ -10,11 +10,13 @@ namespace VendingMachineKiosk.ViewModels
     {
         InvalidatePaymentSession,
         LoadProductPaymentViewModel,
-        CeaseProductPaymentViewModel,
+        UnloadProductPaymentViewModel,
         LoadPaymentInstructionPage,
         LoadPaymentInstructionViewModel,
-        CeasePaymentInstructionViewModel,
+        UnloadPaymentInstructionViewModel,
         LoadProductSelectionViewModel,
-        CeaseProductSelectionViewModel,
+        UnloadProductSelectionViewModel,
+        ProductReleasing,
+        ProductReleased
     }
 }
