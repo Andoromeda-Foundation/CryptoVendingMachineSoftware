@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 using XiaoTianQuanServer.Settings;
 
-namespace XiaoTianQuanServer.Services.Implementations
+namespace XiaoTianQuanServer.Services.Impl
 {
     public class MachineConfigurationService : IMachineConfigurationService
     {

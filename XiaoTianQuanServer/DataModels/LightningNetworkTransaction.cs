@@ -18,5 +18,10 @@ namespace XiaoTianQuanServer.DataModels
 
         [Required]
         public string PaymentRequest { get; set; }
+
+        [Required]
+        public string PaymentHash { get; set; }
+
+        public bool Settled { get; set; }
     }
 }

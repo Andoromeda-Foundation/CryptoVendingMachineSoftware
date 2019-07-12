@@ -25,9 +25,11 @@ namespace XiaoTianQuanServer.DataModels
 
         public DateTime TransactionExpiry { get; set; }
 
+        public DateTime TransactionFulfilled { get; set; }
+
         [Timestamp]
         public byte[] RowVersion { get; set; }
 
-        public bool Active { get; set; }
+        public bool Fulfilled { get; set; }
     }
 }

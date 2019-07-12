@@ -9,7 +9,7 @@ using NSubstitute;
 using XiaoTianQuanServer.Data;
 using XiaoTianQuanServer.DataModels;
 using XiaoTianQuanServer.Services;
-using XiaoTianQuanServer.Services.Implementations;
+using XiaoTianQuanServer.Services.Impl;
 using Xunit;
 
 namespace XiaoTianQuanServer.Test.Services
@@ -31,7 +31,7 @@ namespace XiaoTianQuanServer.Test.Services
         //            ConnectionString =
         //                "Endpoint=sb://xiaotianquan-dev.servicebus.windows.net/;SharedAccessKeyName=ServerKey;SharedAccessKey=G5TqH1Znl0x+jA00ShhmZQd/0tQbA+oVeCvYBvPMcKI=",
         //            PaymentExpiryQueueName = "PaymentExpiry",
-        //            ProductUnreleasedRefundQueueName = "ProductUnreleasedRefund",
+        //            ProductUnfulfilledRefundQueueName = "ProductUnreleasedRefund",
         //            VendingMachineUnlockQueueName = "VendingMachineUnlock"
         //        }), cacheManager);
         //}

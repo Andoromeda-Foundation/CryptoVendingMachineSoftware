@@ -8,7 +8,7 @@ namespace XiaoTianQuanServer.Services
         Task EnqueuePaymentExpiryMessageAsync(Guid transactionId, int delay);
         Task<bool> RemovePaymentExpiryMessageAsync(Guid transactionId);
 
-        Task EnqueueProductUnreleasedRefundMessageAsync(Guid transactionId, int delay);
-        Task<bool> RemoveProductUnreleasedRefundMessageAsync(Guid transactionId);
+        Task EnqueueProductUnfulfilledRefundMessageAsync(Guid transactionId, int inventoryId, int timeoutRelease);
+        Task<bool> RemoveProductUnfulfilledRefundMessageAsync(Guid transactionId);
     }
 }

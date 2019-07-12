@@ -19,7 +19,13 @@ namespace XiaoTianQuanServer.Data
             builder.Entity<VendingMachine>().HasIndex(v => v.MachineId).IsUnique(true);
 
             builder.Entity<Inventory>().HasIndex(i => new { i.VendingMachineId, i.Slot }).IsUnique(true);
+
+            builder.Entity<Transaction>().HasIndex(t => t.Settled).IsUnique(false);
+            builder.Entity<Transaction>().HasIndex(t => t.TransactionExpiry).IsUnique(false);
+
             builder.Entity<LightningNetworkTransaction>().HasOne(t => t.Transaction).WithOne();
+            builder.Entity<LightningNetworkTransaction>().HasIndex(t => t.Settled).IsUnique(false);
+            builder.Entity<LightningNetworkTransaction>().HasIndex(t => t.PaymentHash).IsUnique(true);
 
             base.OnModelCreating(builder);
         }

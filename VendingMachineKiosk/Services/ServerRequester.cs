@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Diagnostics;
@@ -8,6 +9,7 @@ using Windows.Security.Cryptography.Certificates;
 using Windows.Storage.Streams;
 using Windows.Web.Http;
 using Windows.Web.Http.Filters;
+using Microsoft.AspNetCore.SignalR.Client;
 using Newtonsoft.Json;
 using VendingMachineKiosk.Exceptions;
 using XiaoTianQuanProtocols.DataObjects;
@@ -22,6 +24,7 @@ namespace VendingMachineKiosk.Services
         private readonly LoggingChannel _logger;
         private readonly HttpClient _client;
         private readonly Uri _endpoint = new Uri(Config.RequestEndpoint);
+        private readonly HubConnection _hubConnection;
 
         public ServerRequester(LoggingChannel logger)
         {
@@ -50,7 +53,38 @@ namespace VendingMachineKiosk.Services
             }
 
             _client = new HttpClient(filter);
-            //_client.DefaultRequestHeaders.Accept.Add(new Windows.Web.Http.Headers.HttpMediaTypeWithQualityHeaderValue("application/json"));
+
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl(GetUri(Endpoints.VendingMachineHub), opt =>
+                    {
+                        opt.ClientCertificates = new X509CertificateCollection { GetX509Certificate() };
+                    })
+                .WithAutomaticReconnect()
+                .Build();
+
+            SetUpHubHandlers();
+        }
+
+        private X509Certificate2 GetX509Certificate()
+        {
+            foreach (StoreLocation loc in Enum.GetValues(typeof(StoreLocation)))
+            {
+                X509Store store = new X509Store(StoreName.My, loc);
+                store.Open(OpenFlags.ReadOnly);
+                foreach (var storeCertificate in store.Certificates)
+                {
+                    var issuerName = storeCertificate.GetNameInfo(X509NameType.SimpleName, true);
+                    if (issuerName == Config.CertificateIssuer)
+                        return storeCertificate;
+                }
+                store.Close();
+            }
+            return null;
+        }
+
+        private void SetUpHubHandlers()
+        {
+            //_hubConnection.On()
         }
 
         private Uri GetUri(string endpoint)
@@ -111,16 +145,17 @@ namespace VendingMachineKiosk.Services
 
             try
             {
-                var result = await action(request);
-
-                if (result.IsSuccessStatusCode)
+                using (var result = await action(request))
                 {
-                    return await responseParser(result);
-                }
-                else
-                {
-                    throw new ServerNonSuccessResponseException(
-                        $"Server returned {result.StatusCode}: {result.ReasonPhrase}");
+                    if (result.IsSuccessStatusCode)
+                    {
+                        return await responseParser(result);
+                    }
+                    else
+                    {
+                        throw new ServerNonSuccessResponseException(
+                            $"Server returned {result.StatusCode}: {result.ReasonPhrase}");
+                    }
                 }
             }
             catch (Exception e)

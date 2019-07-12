@@ -22,28 +22,26 @@ namespace XiaoTianQuanServer.Controllers
     public class TransactionController : ControllerBase
     {
         private readonly ILogger<TransactionController> _logger;
-        private readonly LightningNetworkService _lightningNetworkService;
+        private readonly LightningNetworkRequestService _lightningNetworkRequestService;
         private readonly IVendingMachineDataService _vmService;
         private readonly ICurrencyExchangeService _exchangeService;
         private readonly IMachineConfigurationService _machineConfiguration;
         private readonly IVendingJobQueue _vendingJobQueue;
         private readonly ITransactionManager _transactionManager;
-        private readonly IPaymentInstructionCacheManager _paymentInstructionCacheManager;
 
         public TransactionController(ILogger<TransactionController> logger,
-            LightningNetworkService lightningNetworkService,
+            LightningNetworkRequestService lightningNetworkRequestService,
             IVendingMachineDataService vmService, ICurrencyExchangeService exchangeService,
             IMachineConfigurationService machineConfiguration, IVendingJobQueue vendingJobQueue,
-            ITransactionManager transactionManager, IPaymentInstructionCacheManager paymentInstructionCacheManager)
+            ITransactionManager transactionManager)
         {
             _logger = logger;
-            _lightningNetworkService = lightningNetworkService;
+            _lightningNetworkRequestService = lightningNetworkRequestService;
             _vmService = vmService;
             _exchangeService = exchangeService;
             _machineConfiguration = machineConfiguration;
             _vendingJobQueue = vendingJobQueue;
             _transactionManager = transactionManager;
-            _paymentInstructionCacheManager = paymentInstructionCacheManager;
         }
 
         [HttpPost]
@@ -122,7 +120,7 @@ namespace XiaoTianQuanServer.Controllers
                 case PaymentType.LightningNetwork:
                     var satoshiIfNotCreated = _exchangeService.ConvertToSatoshi(basePrice);
                     var memo = $"{transaction.Id}, sell product in {slot} for {satoshiIfNotCreated} on {DateTime.UtcNow}";
-                    var result = await _paymentInstructionCacheManager.RetrieveOrCreateLightningNetwork(transaction.Id, memo, satoshiIfNotCreated);
+                    var result = await _transactionManager.GetLightningNetworkPaymentInstruction(transaction.Id, memo, satoshiIfNotCreated);
 
                     if (result == null)
                     {
@@ -138,6 +136,28 @@ namespace XiaoTianQuanServer.Controllers
                 default:
                     throw new ArgumentOutOfRangeException();
             }
+        }
+
+        [HttpPost]
+        [Route("transactioncomplete")]
+        [Authorize(Policy = Policies.VendingMachine)]
+        public async Task<IActionResult> TransactionComplete([FromBody]TransactionCompleteRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var machineId = this.GetMachineId();
+            var response = new TransactionCompleteResponse
+            {
+                Status = ResponseStatus.Ok
+            };
+
+            var completed = await _transactionManager.CompleteTransactionAsync(request.TransactionId, machineId);
+            if (!completed)
+            {
+                response.Status = ResponseStatus.TransactionCompleteFailed;
+            }
+            return Ok(response);
         }
     }
 }

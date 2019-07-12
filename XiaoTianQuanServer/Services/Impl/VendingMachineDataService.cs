@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using XiaoTianQuanServer.Data;
 using XiaoTianQuanServer.DataModels;
 
-namespace XiaoTianQuanServer.Services.Implementations
+namespace XiaoTianQuanServer.Services.Impl
 {
     public class VendingMachineDataService : IVendingMachineDataService
     {
@@ -57,6 +57,29 @@ namespace XiaoTianQuanServer.Services.Implementations
             return false;
         }
 
+        public async Task<bool> IncreaseVendingMachineSlotInventoryQuantityAsync(int inventoryId, int amount, int retry = 3)
+        {
+            do
+            {
+                var inventory = await _context.Inventories.FindAsync(inventoryId);
+
+                inventory.Quantity += amount;
+                _context.Entry(inventory).State = EntityState.Modified;
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+                    return true;
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    --retry;
+                }
+            } while (retry > 0);
+
+            return false;
+        }
+
         public async Task<bool> DecreaseVendingMachineSlotInventoryQuantityAsync(Guid machineId, string slot, int amount, int retry = 3)
         {
             do
@@ -84,5 +107,30 @@ namespace XiaoTianQuanServer.Services.Implementations
             return false;
         }
 
+        public async Task<bool> DecreaseVendingMachineSlotInventoryQuantityAsync(int inventoryId, int amount, int retry = 3)
+        {
+            do
+            {
+                var inventory = await _context.Inventories.FindAsync(inventoryId);
+
+                if (amount > inventory.Quantity)
+                    return false;
+
+                inventory.Quantity -= amount;
+                _context.Entry(inventory).State = EntityState.Modified;
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+                    return true;
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    --retry;
+                }
+            } while (retry > 0);
+
+            return false;
+        }
     }
 }

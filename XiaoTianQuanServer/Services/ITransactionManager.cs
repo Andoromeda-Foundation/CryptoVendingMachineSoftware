@@ -9,5 +9,11 @@ namespace XiaoTianQuanServer.Services
     {
         Task<Transaction> CreateTransactionAsync(int inventoryId, int timeout);
         Task<Transaction> GetTransactionAsync(Guid transactionId);
+
+        Task<LightningNetworkTransaction> GetLightningNetworkPaymentInstruction(Guid transactionId, string memo, int amount);
+        Task<Guid> GetLightningNetworkTransactionId(string paymentHash);
+        Task<bool> SettleLightningNetworkTransactionAsync(string paymentHash);
+
+        Task<bool> CompleteTransactionAsync(Guid transactionId, Guid machineId);
     }
 }

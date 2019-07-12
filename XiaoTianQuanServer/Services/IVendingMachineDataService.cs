@@ -12,6 +12,8 @@ namespace XiaoTianQuanServer.Services
         Task<Inventory> GetVendingMachineSlotInfoAsync(Guid machineId, string slot);
 
         Task<bool> IncreaseVendingMachineSlotInventoryQuantityAsync(Guid machineId, string slot, int amount, int retry = 3);
+        Task<bool> IncreaseVendingMachineSlotInventoryQuantityAsync(int inventoryId, int amount, int retry = 3);
         Task<bool> DecreaseVendingMachineSlotInventoryQuantityAsync(Guid machineId, string slot, int amount, int retry = 3);
+        Task<bool> DecreaseVendingMachineSlotInventoryQuantityAsync(int inventoryId, int amount, int retry = 3);
     }
 }

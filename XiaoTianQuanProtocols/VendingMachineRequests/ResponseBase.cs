@@ -25,6 +25,7 @@ namespace XiaoTianQuanProtocols.VendingMachineRequests
         // 51xx: lnd
         TransactionGenerationFailed = 5000,
         TransactionNotFound = 5001,
+        TransactionCompleteFailed = 5002,
         LndGenerateInvoiceFailed = 5100,
     }
 }

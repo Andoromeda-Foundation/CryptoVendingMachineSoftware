@@ -44,7 +44,7 @@ namespace XiaoTianQuanServer
                 options.CheckConsentNeeded = context => false;
             });
 
-            services.AddDbContext<ApplicationDbContext>(options =>
+            services.AddDbContextPool<ApplicationDbContext>(options =>
                 options.UseSqlServer(
                     Configuration.GetConnectionString("DefaultConnection")));
             services.AddDefaultIdentity<IdentityUser>()
@@ -105,38 +105,43 @@ namespace XiaoTianQuanServer
             services.AddSingleton(authorizationSettings);
 
             // Lightning Network Service
-            services.AddSingleton<Services.LightningNetwork.LightningNetworkService>();
+            services.AddTransient<Services.LightningNetwork.LightningNetworkRequestService>();
+            services.AddHostedService<Services.LightningNetwork.LightningNetworkSubscribeService>();
 
             // Exchange service
             services.AddSingleton<CoinMarketCapCurrencyExchangeService>();
             services.AddSingleton<ICurrencyExchangeService>(sp => sp.GetService<CoinMarketCapCurrencyExchangeService>());
-            services.AddHostedService<BackgroundServiceStarter<CoinMarketCapCurrencyExchangeService>>();
+            services.AddHostedService(sp => sp.GetService<CoinMarketCapCurrencyExchangeService>());
 
             // VendingMachineDataService
-            services.AddTransient<IVendingMachineDataService, Services.Implementations.VendingMachineDataService>();
+            services.AddTransient<IVendingMachineDataService, Services.Impl.VendingMachineDataService>();
+
+            // VendingMachineControlService
+            services.AddTransient<IVendingMachineControlService, Services.Impl.VendingMachineControlService>();
 
             // MachineConfigurationService
-            services.AddSingleton<IMachineConfigurationService, Services.Implementations.MachineConfigurationService>();
+            services.AddSingleton<IMachineConfigurationService, Services.Impl.MachineConfigurationService>();
 
             // TransactionManager
-            services.AddTransient<ITransactionManager, Services.Implementations.TransactionManager>();
+            services.AddTransient<ITransactionManager, Services.Impl.TransactionManager>();
 
-            // PaymentInstructionCacheManager
-            services
-                .AddTransient<IPaymentInstructionCacheManager, Services.Implementations.PaymentInstructionCacheManager>();
+            // TransactionSettlementService
+            services.AddSingleton<ITransactionSettlementService, Services.Impl.TransactionSettlementService>();
+            services.AddHostedService(st => st.GetService<ITransactionSettlementService>());
+
 
             // VendingJobQueue
-            services.AddSingleton<Services.Implementations.AzureServiceBusVendingJobQueue>();
-            services.AddSingleton<IVendingJobQueue>(sp =>
-                sp.GetService<Services.Implementations.AzureServiceBusVendingJobQueue>());
-            services
-                .AddHostedService<BackgroundServiceStarter<Services.Implementations.AzureServiceBusVendingJobQueue>>();
+            services.AddSingleton<Services.Impl.AzureServiceBusVendingJobQueue>();
+            services.AddSingleton<IVendingJobQueue>(sp => sp.GetService<Services.Impl.AzureServiceBusVendingJobQueue>());
+            services.AddHostedService(sp => sp.GetService<Services.Impl.AzureServiceBusVendingJobQueue>());
 
             // Redis
             var redisConnectString = Configuration.GetConnectionString("Redis");
             services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(
                 StackExchange.Redis.ConnectionMultiplexer.Connect(redisConnectString));
-            services.AddTransient<IKvCacheManager, Services.Implementations.RedisKvCacheManager>();
+            services.AddTransient<IKvCacheManager, Services.Impl.RedisKvCacheManager>();
+
+            services.AddSignalR();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -175,6 +180,7 @@ namespace XiaoTianQuanServer
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
                 endpoints.MapRazorPages();
+                endpoints.MapHub<Hubs.VendingMachine>("/hub/vendingmachine");
             });
         }
     }
