@@ -33,6 +33,10 @@ namespace VendingMachineKiosk
             services.AddSingleton<VendingStateViewModelService>();
             services.AddSingleton<IVendingMachineControlService, VendingMachineControlService>();
             services.AddSingleton<PreloadSingletonServiceHelper>();
+
+            var vmhs = new VendingMachineHardwareService();
+            services.AddSingleton(vmhs);
+            Task.Run(async () => await vmhs.InitializeAsync());
         }
     }
 }

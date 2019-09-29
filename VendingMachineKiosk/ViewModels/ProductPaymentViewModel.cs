@@ -70,6 +70,7 @@ namespace VendingMachineKiosk.ViewModels
                 case Messages.UnloadProductPaymentViewModel:
                     CeaseViewModel();
                     _vendingMachineControlService.RemovePendingTransaction(VendingStateViewModelService.TransactionId);
+                    VendingStateViewModelService.ResetVendingState();
                     break;
                 case Messages.UnloadPaymentInstructionViewModel:
                     break;

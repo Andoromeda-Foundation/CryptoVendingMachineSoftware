@@ -4,6 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.Core;
+using Windows.Devices.Enumeration;
+using Windows.Devices.Gpio;
+using Windows.Devices.I2c;
 using Windows.Foundation.Diagnostics;
 using Windows.UI.Core;
 using GalaSoft.MvvmLight.Messaging;
@@ -16,17 +19,48 @@ namespace VendingMachineKiosk.Services
     {
         private readonly LoggingChannel _logger;
         private readonly ServerRequester _serverRequester;
+        private readonly VendingMachineHardwareService _vendingMachine;
 
-        public VendingMachineControlService(LoggingChannel logger, ServerRequester serverRequester)
+        public VendingMachineControlService(LoggingChannel logger, ServerRequester serverRequester, VendingMachineHardwareService vendingMachine)
         {
             _logger = logger;
             _serverRequester = serverRequester;
+            _vendingMachine = vendingMachine;
             serverRequester.ReleaseProduct += ServerRequester_ReleaseProduct;
+        }
+
+        public event Action<MachineHardwareStatus> MachineStatusChanged;
+
+        private MachineHardwareStatus _machineHardwareStatus;
+        public MachineHardwareStatus MachineHardwareStatus
+        {
+            get => _machineHardwareStatus;
+            private set
+            {
+                _machineHardwareStatus = value;
+                MachineStatusChanged?.Invoke(value);
+            }
+        }
+
+        private async Task<bool> ReleaseItemAsync(string slot)
+        {
+            if (!uint.TryParse(slot, out var slotId))
+            {
+                MachineHardwareStatus = MachineHardwareStatus.InvalidSlot;
+                return false;
+            }
+
+            if (slotId > 0x8 * 0xF)
+            {
+                MachineHardwareStatus = MachineHardwareStatus.InvalidSlot;
+                return false;
+            }
+
+            return await _vendingMachine.ReleaseItemAsync(slotId);
         }
 
         private async void ServerRequester_ReleaseProduct(string slot, Guid transactionId)
         {
-
             lock (_pendingTransactions)
             {
                 if (_pendingTransactions.Contains(transactionId))
@@ -77,16 +111,6 @@ namespace VendingMachineKiosk.Services
                 _pendingTransactions.Remove(transactionId);
             }
         }
-
-        public async Task<bool> ReleaseItemAsync(string slot)
-        {
-            // TODO: release item
-            await Task.Delay(4000);
-            return true;
-        }
-
-        public event Action<MachineHardwareStatus> MachineStatusChanged;
-        public MachineHardwareStatus MachineHardwareStatus { get; private set; }
 
         private readonly HashSet<Guid> _pendingTransactions = new HashSet<Guid>();
     }

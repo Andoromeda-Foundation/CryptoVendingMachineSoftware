@@ -354,3 +354,4 @@ healthchecksdb
 MigrationBackup/
 
 *.pdf
+/XiaoTianQuanServer/mig.sql

@@ -49,7 +49,7 @@
     <Capability Name="internetClient" />
     <uap:Capability Name="sharedUserCertificates"/>
     <DeviceCapability Name="lowLevel"/>
-    <rescap:Capability Name="extendedExecutionUnconstrained"/> 
-    <rescap:Capability Name="extendedBackgroundTaskTime"/> 
+    <!--<rescap:Capability Name="extendedExecutionUnconstrained"/> -->
+    <!--<rescap:Capability Name="extendedBackgroundTaskTime"/> -->
   </Capabilities>
 </Package>

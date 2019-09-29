@@ -7,14 +7,14 @@ namespace VendingMachineKiosk.Services
     public enum MachineHardwareStatus
     {
         Ok,
+        InvalidSlot,
+        ReleaseFailed,
     }
 
     public interface IVendingMachineControlService
     {
         void AddPendingTransaction(Guid transactionId);
         void RemovePendingTransaction(Guid transactionId);
-
-        Task<bool> ReleaseItemAsync(string slot);
 
         event Action<MachineHardwareStatus> MachineStatusChanged;
 
